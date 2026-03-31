@@ -26,6 +26,10 @@ class ITC_Pro_Companion {
         check_ajax_referer( 'itc_admin_nonce', 'nonce' );
         if(isset($_POST['api_key'])) {
             update_option('itc_api_key', sanitize_text_field($_POST['api_key']));
+            update_option('itc_compression_quality', intval($_POST['quality']));
+            update_option('itc_scan_threshold', intval($_POST['threshold']));
+            update_option('itc_auto_compress', intval($_POST['auto']));
+            update_option('itc_backup_originals', intval($_POST['backup']));
             wp_send_json_success('Settings securely saved.');
         }
         wp_send_json_error();
@@ -75,10 +79,30 @@ class ITC_Pro_Companion {
                     <p class="itc-subtitle">Powered by the ImageTight Cloud API.</p>
                 </div>
                 <div class="itc-stats">
-                    <div class="stat-box" style="margin-bottom: 10px;">
-                        <span class="stat-label">API Key</span>
-                        <input type="password" id="itc-api-key" value="<?php echo esc_attr(get_option('itc_api_key')); ?>" placeholder="License Key..." style="width:200px; padding: 5px; font-size:12px;" />
-                        <button onclick="itc_save_key()" class="button button-secondary">Save Settings</button>
+                    <div class="stat-box" style="margin-bottom: 10px; display:flex; flex-direction:column; gap:8px;">
+                        <div>
+                            <span class="stat-label">API Key</span>
+                            <input type="password" id="itc-api-key" value="<?php echo esc_attr(get_option('itc_api_key')); ?>" placeholder="License Key..." style="width:200px; padding: 5px; font-size:12px;" />
+                        </div>
+                        <div>
+                            <span class="stat-label" style="display:inline-block; width:120px;">Quality (1-100)</span>
+                            <input type="number" id="itc-quality" value="<?php echo esc_attr(get_option('itc_compression_quality', 75)); ?>" style="width:60px; padding: 5px; font-size:12px;" />
+                        </div>
+                        <div>
+                            <span class="stat-label" style="display:inline-block; width:120px;">Scan Minimum</span>
+                            <select id="itc-threshold" style="padding: 2px; font-size:12px; width:100px;">
+                                <?php $t = get_option('itc_scan_threshold', 150); ?>
+                                <option value="50" <?php selected($t, 50); ?>>50 KB</option>
+                                <option value="150" <?php selected($t, 150); ?>>150 KB</option>
+                                <option value="500" <?php selected($t, 500); ?>>500 KB</option>
+                            </select>
+                        </div>
+                        <div style="font-size: 13px;">
+                            <label><input type="checkbox" id="itc-auto" value="1" <?php checked(get_option('itc_auto_compress', 1), 1); ?> /> Auto-Compress New Uploads</label>
+                            <br>
+                            <label><input type="checkbox" id="itc-backup" value="1" <?php checked(get_option('itc_backup_originals', 1), 1); ?> /> Keep Original Backups (.bak)</label>
+                        </div>
+                        <button onclick="itc_save_key()" class="button button-secondary" style="width:fit-content; margin-top:5px;">Save All Settings</button>
                     </div>
                     <div id="itc-quota-display" style="display:none; background:#1e293b; color:#fff; padding:10px 15px; border-radius:5px; font-size:13px;">
                         <span class="dashicons dashicons-chart-pie"></span> Quota Remaining: <strong id="itc-quota-val">Loading...</strong>
@@ -104,7 +128,7 @@ class ITC_Pro_Companion {
 
     public function ajax_scan_images() {
         check_ajax_referer( 'itc_admin_nonce', 'nonce' );
-        $threshold = 150 * 1024; // 150KB threshold
+        $threshold = intval(get_option('itc_scan_threshold', 150)) * 1024;
         $heavy_images = array();
 
         $query = new WP_Query( array(
@@ -161,7 +185,7 @@ class ITC_Pro_Companion {
     public function auto_compress_upload( $metadata, $attachment_id ) {
         if ( ! current_user_can( 'upload_files' ) ) return $metadata;
         $api_key = get_option('itc_api_key');
-        if ( empty($api_key) ) return $metadata; // Skip if no API key
+        if ( empty($api_key) || !get_option('itc_auto_compress', 1) ) return $metadata; // Skip if no API key or auto-compress off
         
         $api_url = 'https://imagetight-api.vercel.app/api/compress';
         $old_file = get_attached_file( $attachment_id );
@@ -177,6 +201,7 @@ class ITC_Pro_Companion {
               CURLOPT_POSTFIELDS => array(
                 'api_key' => $api_key,
                 'domain'  => site_url(),
+                'quality' => get_option('itc_compression_quality', 75),
                 'image' => new CURLFile($old_file, mime_content_type($old_file), basename($old_file))
               ),
             ));
@@ -193,7 +218,11 @@ class ITC_Pro_Companion {
                 file_put_contents($new_filepath, $response);
                 
                 if ( $old_file !== $new_filepath ) {
-                    @unlink( $old_file );
+                    if (get_option('itc_backup_originals', 1)) {
+                        @rename($old_file, $old_file . '.itc-bak');
+                    } else {
+                        @unlink( $old_file );
+                    }
                     if ( isset($metadata['sizes']) ) {
                         foreach ( $metadata['sizes'] as $size => $size_info ) @unlink( $path_info['dirname'] . '/' . $size_info['file'] );
                     }
@@ -296,6 +325,7 @@ class ITC_Pro_Companion {
                   CURLOPT_POSTFIELDS => array(
                     'api_key' => $api_key,
                     'domain'  => site_url(),
+                    'quality' => get_option('itc_compression_quality', 75),
                     'image' => new CURLFile($old_file, mime_content_type($old_file), basename($old_file))
                   ),
                 ));
@@ -317,7 +347,11 @@ class ITC_Pro_Companion {
                     file_put_contents($new_filepath, $response);
                     
                     if ( $old_file !== $new_filepath ) {
-                        @unlink( $old_file );
+                        if (get_option('itc_backup_originals', 1)) {
+                            @rename($old_file, $old_file . '.itc-bak');
+                        } else {
+                            @unlink( $old_file );
+                        }
                         $metadata = wp_get_attachment_metadata( $attachment_id );
                         if ( isset($metadata['sizes']) ) {
                             foreach ( $metadata['sizes'] as $size => $size_info ) @unlink( $path_info['dirname'] . '/' . $size_info['file'] );

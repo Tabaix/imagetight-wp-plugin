@@ -148,8 +148,23 @@ jQuery(document).ready(function($) {
 
     window.itc_save_key = function() {
         var key = $('#itc-api-key').val();
-        $.post(itc_data.ajax_url, { action: 'itc_save_key', nonce: itc_data.nonce, api_key: key }, function(res) {
-            alert(res.success ? 'Settings securely saved!' : 'Could not save.');
+        var quality = $('#itc-quality').val();
+        var threshold = $('#itc-threshold').val();
+        var auto = $('#itc-auto').is(':checked') ? 1 : 0;
+        var backup = $('#itc-backup').is(':checked') ? 1 : 0;
+        
+        var data = { 
+            action: 'itc_save_key', 
+            nonce: itc_data.nonce, 
+            api_key: key,
+            quality: quality,
+            threshold: threshold,
+            auto: auto,
+            backup: backup
+        };
+        
+        $.post(itc_data.ajax_url, data, function(res) {
+            alert(res.success ? 'All Settings Saved Successfully!' : 'Could not save.');
         });
     };
 
