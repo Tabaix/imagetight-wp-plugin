@@ -1,12 +1,14 @@
 <?php
 /**
- * Plugin Name: ImageTight Pro Companion
+ * Plugin Name: ImageTight: Elite Image Optimizer
  * Plugin URI:  https://imagetight.tabaix.com
- * Description: The ultimate 1-click in-browser image compressor and SEO optimizer for WordPress. Powered by ImageTight design.
- * Version:     2.0.0
+ * Description: The professional 1-click in-browser image compressor and SEO optimizer. Powered by Vercel Edge infrastructure.
+ * Version:     1.0.0
  * Author:      Tabaix
  * Author URI:  https://tabaix.com
- * License:     GPL-2.0+
+ * License:     GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: image-tight
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -25,15 +27,20 @@ class ITC_Pro_Companion {
 
     public function ajax_save_key() {
         check_ajax_referer( 'itc_admin_nonce', 'nonce' );
+        
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( 'Unauthorized' );
+        }
+
         if(isset($_POST['api_key'])) {
             update_option('itc_api_key', sanitize_text_field($_POST['api_key']));
-            update_option('itc_compression_quality', intval($_POST['quality']));
-            update_option('itc_scan_threshold', intval($_POST['threshold']));
-            update_option('itc_auto_compress', intval($_POST['auto']));
-            update_option('itc_backup_originals', intval($_POST['backup']));
+            update_option('itc_compression_quality', isset($_POST['quality']) ? intval($_POST['quality']) : 75);
+            update_option('itc_scan_threshold', isset($_POST['threshold']) ? intval($_POST['threshold']) : 150);
+            update_option('itc_auto_compress', isset($_POST['auto']) ? intval($_POST['auto']) : 0);
+            update_option('itc_backup_originals', isset($_POST['backup']) ? intval($_POST['backup']) : 0);
             wp_send_json_success('Settings securely saved.');
         }
-        wp_send_json_error();
+        wp_send_json_error('Missing data.');
     }
 
     public function ajax_check_quota() {
@@ -56,8 +63,8 @@ class ITC_Pro_Companion {
 
     public function enqueue_admin_assets( $hook ) {
         if ( $hook !== 'toplevel_page_imagetight' ) return;
-        wp_enqueue_style( 'itc-admin-style', plugins_url( 'assets/admin.css', __FILE__ ), array(), '2.1.0' );
-        wp_enqueue_script( 'itc-admin-script', plugins_url( 'assets/admin.js', __FILE__ ), array( 'jquery' ), '2.1.0', true );
+        wp_enqueue_style( 'itc-admin-style', plugins_url( 'assets/admin.css', __FILE__ ), array(), '1.0.0' );
+        wp_enqueue_script( 'itc-admin-script', plugins_url( 'assets/admin.js', __FILE__ ), array( 'jquery' ), '1.0.0', true );
         wp_localize_script( 'itc-admin-script', 'itc_data', array(
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'    => wp_create_nonce( 'itc_admin_nonce' ),
@@ -183,13 +190,13 @@ class ITC_Pro_Companion {
                                 $bytes_saved = intval(get_post_meta($att->ID, '_itc_bytes_saved', true));
                                 $thumb = wp_get_attachment_image_url($att->ID, 'thumbnail');
                                 ?>
-                                <div class="itc-card" id="itc-card-rest-<?php echo $att->ID; ?>" style="display:flex; flex-direction:column; padding:15px;">
+                                <div class="itc-card" id="itc-card-rest-<?php echo intval($att->ID); ?>" style="display:flex; flex-direction:column; padding:15px;">
                                     <img src="<?php echo esc_url($thumb); ?>" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:10px;" />
                                     <strong style="font-size:12px; word-break:break-all; flex-grow:1;"><?php echo esc_html($att->post_title); ?></strong>
-                                    <span style="font-size:11px; color:#22c55e; font-weight:bold; display:block; margin-bottom:10px;">Saved <?php echo size_format($bytes_saved); ?></span>
+                                    <span style="font-size:11px; color:#22c55e; font-weight:bold; display:block; margin-bottom:10px;">Saved <?php echo esc_html(size_format($bytes_saved)); ?></span>
                                     
                                     <?php if ($has_backup) { ?>
-                                        <button class="button button-secondary" onclick="itc_restore_image(<?php echo $att->ID; ?>)" style="width:100%; border-color:#e2e8f0; font-size:11px;">Restore Original</button>
+                                        <button class="button button-secondary" onclick="itc_restore_image(<?php echo intval($att->ID); ?>)" style="width:100%; border-color:#e2e8f0; font-size:11px;">Restore Original</button>
                                     <?php } else { ?>
                                         <span style="font-size:11px; color:#94a3b8; text-align:center; display:block;">Backup Not Saved.</span>
                                     <?php } ?>
