@@ -216,4 +216,29 @@ jQuery(document).ready(function($) {
     window.itc_auto_compress = function(id) {
         itc_auto_compress_promise(id);
     };
+
+    window.itc_restore_image = function(id) {
+        if (!confirm('Warning: Are you sure you want to restore the massive, unoptimized original image? This will undo the webp conversion.')) return;
+        
+        var $btn = $('#itc-card-rest-' + id).find('button');
+        var originalText = $btn.text();
+        $btn.text('Restoring via File System...').prop('disabled', true);
+        
+        $.post(itc_data.ajax_url, {
+            action: 'itc_restore_image',
+            nonce: itc_data.nonce,
+            attachment_id: id
+        }, function(res) {
+            if (res.success) {
+                $('#itc-card-rest-' + id).css('opacity', '0.5');
+                $btn.text('Restored!');
+                setTimeout(function(){
+                    $('#itc-card-rest-' + id).slideUp();
+                }, 1000);
+            } else {
+                alert('Error: ' + res.data);
+                $btn.text(originalText).prop('disabled', false);
+            }
+        });
+    };
 });
