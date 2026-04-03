@@ -36,6 +36,7 @@ class ITC_Pro_Companion {
         if(isset($_POST['api_key'])) {
             update_option('itc_api_key', sanitize_text_field(wp_unslash($_POST['api_key'])));
             update_option('itc_compression_quality', isset($_POST['quality']) ? intval(wp_unslash($_POST['quality'])) : 75);
+            update_option('itc_output_format', isset($_POST['format']) ? sanitize_text_field(wp_unslash($_POST['format'])) : 'webp');
             update_option('itc_scan_threshold', isset($_POST['threshold']) ? intval(wp_unslash($_POST['threshold'])) : 150);
             update_option('itc_auto_compress', isset($_POST['auto']) ? intval(wp_unslash($_POST['auto'])) : 0);
             update_option('itc_backup_originals', isset($_POST['backup']) ? intval(wp_unslash($_POST['backup'])) : 0);
@@ -233,6 +234,17 @@ class ITC_Pro_Companion {
                         </div>
 
                         <div>
+                            <label style="font-weight: 800; font-size: 13px; color: #0f172a; display: block; margin-bottom: 5px;">Target Output Format</label>
+                            <select id="itc-format" style="width:100%; padding: 12px; font-size:14px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                                <?php $f = get_option('itc_output_format', 'webp'); ?>
+                                <option value="webp" <?php selected($f, 'webp'); ?>>WebP (Recommended Default)</option>
+                                <option value="avif" <?php selected($f, 'avif'); ?>>AVIF (Extreme Compression)</option>
+                                <option value="jpeg" <?php selected($f, 'jpeg'); ?>>JPEG (Legacy Support)</option>
+                                <option value="png" <?php selected($f, 'png'); ?>>PNG (Lossless Preservation)</option>
+                            </select>
+                        </div>
+
+                        <div>
                             <label style="font-weight: 800; font-size: 13px; color: #0f172a; display: block; margin-bottom: 5px;">Minimum Scan Threshold</label>
                             <select id="itc-threshold" style="width:100%; padding: 12px; font-size:14px; border-radius: 6px; border: 1px solid #cbd5e1;">
                                 <?php $t = get_option('itc_scan_threshold', 150); ?>
@@ -383,6 +395,8 @@ class ITC_Pro_Companion {
         $payload .= "--" . $boundary . "\r\n";
         $payload .= "Content-Disposition: form-data; name=\"quality\"\r\n\r\n" . get_option('itc_compression_quality', 75) . "\r\n";
         $payload .= "--" . $boundary . "\r\n";
+        $payload .= "Content-Disposition: form-data; name=\"output_format\"\r\n\r\n" . get_option('itc_output_format', 'webp') . "\r\n";
+        $payload .= "--" . $boundary . "\r\n";
         $payload .= "Content-Disposition: form-data; name=\"image\"; filename=\"" . basename($file_path) . "\"\r\n";
         $filetype = wp_check_filetype($file_path);
         $mime = $filetype['type'] ?: 'application/octet-stream';
@@ -410,8 +424,11 @@ class ITC_Pro_Companion {
             
             if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200) {
                 $body = wp_remote_retrieve_body($response);
+                $server_format = wp_remote_retrieve_header($response, 'x-output-format') ?: get_option('itc_output_format', 'webp');
+                $ext = $server_format === 'jpeg' ? 'jpg' : $server_format;
+
                 $path_info = pathinfo( $old_file );
-                $new_filepath = $path_info['dirname'] . '/' . $path_info['filename'] . '.webp';
+                $new_filepath = $path_info['dirname'] . '/' . $path_info['filename'] . '.' . $ext;
                 
                 file_put_contents($new_filepath, $body);
                 $bytes_saved = max(0, $original_size - filesize($new_filepath));
@@ -428,7 +445,7 @@ class ITC_Pro_Companion {
                 }
                 
                 update_attached_file( $attachment_id, $new_filepath );
-                wp_update_post( array( 'ID' => $attachment_id, 'post_mime_type' => 'image/webp' ) );
+                wp_update_post( array( 'ID' => $attachment_id, 'post_mime_type' => 'image/' . $server_format ) );
                 update_post_meta($attachment_id, '_itc_is_optimized', '1');
                 if($bytes_saved > 0) update_post_meta($attachment_id, '_itc_bytes_saved', $bytes_saved);
                 
@@ -462,8 +479,10 @@ class ITC_Pro_Companion {
         $response = $this->remote_compress('https://imagetight-api.vercel.app/api/compress', $api_key, $old_file);
 
         if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200) {
+            $server_format = wp_remote_retrieve_header($response, 'x-output-format') ?: get_option('itc_output_format', 'webp');
+            $ext = $server_format === 'jpeg' ? 'jpg' : $server_format;
             $path_info = pathinfo( $old_file );
-            $new_filepath = $path_info['dirname'] . '/' . $path_info['filename'] . '.webp';
+            $new_filepath = $path_info['dirname'] . '/' . $path_info['filename'] . '.' . $ext;
             file_put_contents($new_filepath, wp_remote_retrieve_body($response));
             
             $bytes_saved = max(0, $original_size - filesize($new_filepath));
@@ -482,7 +501,7 @@ class ITC_Pro_Companion {
             }
 
             update_attached_file( $attachment_id, $new_filepath );
-            wp_update_post( array( 'ID' => $attachment_id, 'post_mime_type' => 'image/webp' ) );
+            wp_update_post( array( 'ID' => $attachment_id, 'post_mime_type' => 'image/' . $server_format ) );
             update_post_meta($attachment_id, '_itc_is_optimized', '1');
             if($bytes_saved > 0) update_post_meta($attachment_id, '_itc_bytes_saved', $bytes_saved);
 
