@@ -13,6 +13,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+if ( ! class_exists( 'ITC_Pro_Companion' ) ) {
 class ITC_Pro_Companion {
     public function __construct() {
         add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
@@ -77,10 +78,12 @@ class ITC_Pro_Companion {
         $total_attachments = wp_count_attachments('image');
         global $wpdb;
         $optimized_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_itc_is_optimized' AND meta_value = '1'");
-        $pending_count = max(0, $total_attachments - $optimized_count);
+        $total_inherit = isset($total_attachments->inherit) ? (int)$total_attachments->inherit : 0;
+        $pending_count = max(0, $total_inherit - (int)$optimized_count);
         $saved_bytes = $wpdb->get_var("SELECT SUM(meta_value) FROM {$wpdb->postmeta} WHERE meta_key = '_itc_bytes_saved'");
         $saved_mb = $saved_bytes ? size_format($saved_bytes, 2) : '0 MB';
-        $optimized_percentage = $total_attachments > 0 ? round(($optimized_count / (int)$total_attachments->inherit) * 100) : 0;
+        $total_inherit = isset($total_attachments->inherit) ? (int)$total_attachments->inherit : 0;
+        $optimized_percentage = $total_inherit > 0 ? round(($optimized_count / $total_inherit) * 100) : 0;
         ?>
         <style>
             .itc-nav-tab { font-size: 14px; font-weight: 600; padding: 12px 20px; cursor: pointer; border-bottom: 3px solid transparent; color: #64748b; }
@@ -136,7 +139,7 @@ class ITC_Pro_Companion {
                     <div class="metric-card">
                         <span class="metric-label">Total Optimized</span>
                         <div class="metric-val"><?php echo intval($optimized_percentage); ?>%</div>
-                        <div style="font-size: 12px; color: #94a3b8; font-weight: 700; margin-top:5px; text-transform:uppercase;"><?php echo intval($optimized_count); ?> / <?php echo intval($total_attachments->inherit); ?> Images</div>
+                        <div style="font-size: 12px; color: #94a3b8; font-weight: 700; margin-top:5px; text-transform:uppercase;"><?php echo intval($optimized_count); ?> / <?php echo intval($total_inherit); ?> Images</div>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Pending Optimization</span>
@@ -381,7 +384,9 @@ class ITC_Pro_Companion {
         $payload .= "Content-Disposition: form-data; name=\"quality\"\r\n\r\n" . get_option('itc_compression_quality', 75) . "\r\n";
         $payload .= "--" . $boundary . "\r\n";
         $payload .= "Content-Disposition: form-data; name=\"image\"; filename=\"" . basename($file_path) . "\"\r\n";
-        $payload .= "Content-Type: " . mime_content_type($file_path) . "\r\n\r\n";
+        $filetype = wp_check_filetype($file_path);
+        $mime = $filetype['type'] ?: 'application/octet-stream';
+        $payload .= "Content-Type: " . $mime . "\r\n\r\n";
         $payload .= $file_content . "\r\n";
         $payload .= "--" . $boundary . "--\r\n";
         
@@ -493,3 +498,4 @@ class ITC_Pro_Companion {
 }
 
 new ITC_Pro_Companion();
+}
