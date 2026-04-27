@@ -103,6 +103,5 @@
     },
     "editorScript": "file:./toc-build/index.js",
     "editorStyle": "file:./toc-build/index.css",
-    "style": "file:./toc-build/style-index.css",
-    "viewScript": "file:./src/view.js"
+    "style": "file:./toc-build/style-index.css"
 }

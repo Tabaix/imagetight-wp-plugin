@@ -31,6 +31,7 @@ class TSP_ImageTight
     const OPT_THRESHOLD = 'itc_scan_threshold';
     const OPT_AUTO      = 'itc_auto_compress';
     const OPT_BACKUP    = 'itc_backup_originals';
+    const OPT_GEMINI_KEY= 'itc_gemini_api_key';
 
     const API_ENDPOINT  = 'https://imagetight-api.vercel.app/api/compress';
     const QUOTA_URL     = 'https://imagetight-api.vercel.app/api/quota';
@@ -68,6 +69,7 @@ class TSP_ImageTight
         $threshold  = (int)get_option(self::OPT_THRESHOLD, 150);
         $auto       = (int)get_option(self::OPT_AUTO, 0);
         $backup     = (int)get_option(self::OPT_BACKUP, 1);
+        $gemini_key = get_option(self::OPT_GEMINI_KEY, '');
         $has_key    = !empty($api_key);
 
         $total_img  = wp_count_attachments('image');
@@ -194,6 +196,12 @@ class TSP_ImageTight
                         value="<?php echo esc_attr($api_key); ?>" placeholder="it_live_..." />
                     <button class="tss-btn tss-btn-sm" id="tsp-itc-test-key" style="margin-top:8px;">🔑 Test & Save Key</button>
                     <span id="tsp-itc-key-status" style="font-size:12px;margin-left:10px;"></span>
+                </div>
+                <div class="tss-row" style="margin-top:20px;background:rgba(59,130,246,0.05);padding:16px;border-radius:12px;border:1px solid rgba(59,130,246,0.2);">
+                    <label class="tss-label" style="color:#2563EB;">✨ Google Gemini AI Key (Free AI Alt Text)</label>
+                    <p style="font-size:12px;color:#64748B;margin-bottom:10px;">Enter your free Gemini API key from <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>. This will securely trigger our Vercel Edge API to generate high-quality SEO Alt Text for your images during compression!</p>
+                    <input type="password" id="tsp-itc-gemini-key" class="tss-input" style="max-width:500px;"
+                        value="<?php echo esc_attr($gemini_key); ?>" placeholder="AIzaSy..." />
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
                     <div class="tss-row">
@@ -351,6 +359,7 @@ class TSP_ImageTight
                     threshold: $('#tsp-itc-threshold').val(),
                     auto:      $('#tsp-itc-auto').is(':checked') ? 1 : 0,
                     backup:    $('#tsp-itc-backup').is(':checked') ? 1 : 0,
+                    gemini_key: $('#tsp-itc-gemini-key').val(),
                 }, function(r) {
                     $btn.text($(this).attr('id') === 'tsp-itc-test-key' ? '🔑 Test & Save Key' : '💾 Save Settings').prop('disabled', false);
                     if (r.success) {
@@ -417,6 +426,7 @@ class TSP_ImageTight
         $quality  = (int)get_option(self::OPT_QUALITY, 75);
         $format   = get_option(self::OPT_FORMAT, 'webp');
         $do_backup= (int)get_option(self::OPT_BACKUP, 1);
+        $gemini_key= get_option(self::OPT_GEMINI_KEY, '');
 
         if (!$image_id || empty($api_key)) wp_send_json_error(['message' => 'Missing image ID or API key.']);
 
@@ -447,6 +457,10 @@ class TSP_ImageTight
             'format'  => $format,
         ], self::API_ENDPOINT);
 
+        if (!empty($gemini_key)) {
+            $api_url = add_query_arg('gemini_key', $gemini_key, $api_url);
+        }
+
         $response = wp_remote_post($api_url, [
             'timeout' => 60,
             'headers' => ['Content-Type' => "multipart/form-data; boundary={$boundary}"],
@@ -470,6 +484,15 @@ class TSP_ImageTight
 
         $new_size   = strlen($compressed);
         $saved      = max(0, $original_size - $new_size);
+
+        // Check for AI Generated Alt Text in headers (base64 encoded)
+        $alt_text_b64 = wp_remote_retrieve_header($response, 'x-generated-alt');
+        if (!empty($alt_text_b64)) {
+            $alt_text = base64_decode($alt_text_b64);
+            if ($alt_text) {
+                update_post_meta($image_id, '_wp_attachment_image_alt', sanitize_text_field($alt_text));
+            }
+        }
 
         // Update metadata
         update_post_meta($image_id, '_itc_is_optimized', '1');
@@ -525,6 +548,7 @@ class TSP_ImageTight
         update_option(self::OPT_THRESHOLD, max(50, (int)($_POST['threshold'] ?? 150)));
         update_option(self::OPT_AUTO,      (int)($_POST['auto'] ?? 0));
         update_option(self::OPT_BACKUP,    (int)($_POST['backup'] ?? 1));
+        update_option(self::OPT_GEMINI_KEY, sanitize_text_field($_POST['gemini_key'] ?? ''));
 
         wp_send_json_success('Settings saved.');
     }
