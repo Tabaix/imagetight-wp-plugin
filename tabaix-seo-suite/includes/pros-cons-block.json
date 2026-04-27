@@ -1,0 +1,75 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "tabai/interactive-pros-cons",
+    "version": "1.0.0",
+    "title": "Interactive Pros & Cons",
+    "category": "design",
+    "icon": "list-view",
+    "description": "A Pros & Cons block with interactive editing.",
+    "supports": {
+        "html": false
+    },
+    "textdomain": "tabai-interactive-pros-cons",
+    "editorScript": "file:./pros-cons-build/index.js",
+    "editorStyle": "file:./pros-cons-build/index.css",
+    "style": "file:./pros-cons-build/style-index.css",
+    "attributes": {
+        "blockTitle": {
+            "type": "string",
+            "default": "Pros & Cons of Smart Gadget",
+            "source": "html",
+            "selector": "h2"
+        },
+        "prosTitle": {
+            "type": "string",
+            "default": "Pros",
+            "source": "html",
+            "selector": ".tabai-pros-card h3"
+        },
+        "consTitle": {
+            "type": "string",
+            "default": "Cons",
+            "source": "html",
+            "selector": ".tabai-cons-card h3"
+        },
+        "prosList": {
+            "type": "array",
+            "default": [
+                {
+                    "text": "Lightweight"
+                },
+                {
+                    "text": "Easy to use"
+                }
+            ],
+            "source": "query",
+            "selector": ".tabai-pros-card li",
+            "query": {
+                "text": {
+                    "type": "string",
+                    "source": "html"
+                }
+            }
+        },
+        "consList": {
+            "type": "array",
+            "default": [
+                {
+                    "text": "Battery required"
+                },
+                {
+                    "text": "A bit expensive"
+                }
+            ],
+            "source": "query",
+            "selector": ".tabai-cons-card li",
+            "query": {
+                "text": {
+                    "type": "string",
+                    "source": "html"
+                }
+            }
+        }
+    }
+}

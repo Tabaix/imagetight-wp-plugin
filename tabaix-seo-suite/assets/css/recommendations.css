@@ -1,0 +1,115 @@
+/* ═══════════════════════════════════════════════════════
+   ULTIMATE AI MASTER — Recommendations Shortcode Styles
+   ═══════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.uam-recommendations {
+    font-family: 'Inter', -apple-system, sans-serif;
+    margin: 48px 0;
+}
+
+.uam-rec-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #6366f1;
+    display: inline-block;
+}
+
+.uam-rec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.uam-rec-card {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    transition: all .25s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.uam-rec-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, .15);
+    border-color: #6366f1;
+}
+
+.uam-rec-thumb {
+    display: block;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    background: #f1f5f9;
+}
+
+.uam-rec-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .3s ease;
+}
+
+.uam-rec-card:hover .uam-rec-thumb img {
+    transform: scale(1.05);
+}
+
+.uam-rec-no-thumb {
+    width: 100%;
+    height: 100%;
+    min-height: 120px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.uam-rec-meta {
+    padding: 14px;
+    flex: 1;
+}
+
+.uam-rec-cat {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: #6366f1;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.uam-rec-meta h4 {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0 0 8px;
+}
+
+.uam-rec-meta h4 a {
+    color: #1e293b;
+    text-decoration: none;
+}
+
+.uam-rec-meta h4 a:hover {
+    color: #6366f1;
+}
+
+.uam-rec-date {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+@media (max-width: 600px) {
+    .uam-rec-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 400px) {
+    .uam-rec-grid {
+        grid-template-columns: 1fr;
+    }
+}

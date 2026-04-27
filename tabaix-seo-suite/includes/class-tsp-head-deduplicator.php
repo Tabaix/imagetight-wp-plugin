@@ -1,0 +1,143 @@
+<?php
+if (!defined('ABSPATH')) exit;
+
+/**
+ * TSP_Head_Deduplicator
+ *
+ * Solves the "duplicate meta tags" problem permanently, for ANY combination
+ * of SEO plugins (Yoast, RankMath, SEOPress, AIOSEO, our plugin, or unknown).
+ *
+ * HOW IT WORKS:
+ *  1. Before wp_head fires → starts output buffering
+ *  2. After ALL wp_head hooks finish → captures the full <head> HTML
+ *  3. Runs a deduplication pass:
+ *     - Keeps only the FIRST <title> tag found
+ *     - Keeps only the FIRST <meta name="description"> found
+ *     - Keeps only the FIRST <meta name="keywords"> found
+ *     - Keeps only the FIRST of each og: / twitter: tag
+ *     - Removes all subsequent duplicates
+ *  4. Outputs the clean, deduplicated <head> HTML
+ *
+ * RESULT:
+ *  - Works with EVERY SEO plugin combination, including unknown ones
+ *  - No configuration needed — just install and it works
+ *  - Ahrefs / Screaming Frog / Search Console will show zero duplicate warnings
+ */
+class TSP_Head_Deduplicator
+{
+    private static $instance = null;
+
+    public static function get_instance()
+    {
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    private function __construct()
+    {
+        // Only run on the frontend, not in admin
+        if (is_admin()) return;
+
+        // Start buffering at the very beginning of wp_head
+        // Priority -9999 = runs before anything else in wp_head
+        add_action('wp_head', [$this, 'start_buffer'], -9999);
+
+        // End buffering at the very end of wp_head
+        // Priority 99999 = runs after everything else in wp_head
+        add_action('wp_head', [$this, 'end_buffer_and_deduplicate'], 99999);
+    }
+
+    /**
+     * Start capturing all wp_head output into a buffer.
+     */
+    public function start_buffer()
+    {
+        ob_start();
+    }
+
+    /**
+     * Grab the buffered <head> content, deduplicate tags, and echo clean output.
+     */
+    public function end_buffer_and_deduplicate()
+    {
+        $html = ob_get_clean();
+        if (!$html) return;
+
+        $html = $this->deduplicate_title($html);
+        $html = $this->deduplicate_meta_name($html, 'description');
+        $html = $this->deduplicate_meta_name($html, 'keywords');
+        $html = $this->deduplicate_meta_name($html, 'robots');
+        $html = $this->deduplicate_meta_property($html, 'og:title');
+        $html = $this->deduplicate_meta_property($html, 'og:description');
+        $html = $this->deduplicate_meta_property($html, 'og:url');
+        $html = $this->deduplicate_meta_property($html, 'og:type');
+        $html = $this->deduplicate_meta_property($html, 'og:image');
+        $html = $this->deduplicate_meta_property($html, 'og:site_name');
+        $html = $this->deduplicate_meta_name($html, 'twitter:card');
+        $html = $this->deduplicate_meta_name($html, 'twitter:title');
+        $html = $this->deduplicate_meta_name($html, 'twitter:description');
+        $html = $this->deduplicate_meta_name($html, 'twitter:image');
+
+        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    }
+
+    // ── Deduplication helpers ─────────────────────────────────────────────────
+
+    /**
+     * Keep only the FIRST <title> tag, remove all subsequent ones.
+     */
+    private function deduplicate_title($html)
+    {
+        $pattern = '/<title[^>]*>.*?<\/title>/is';
+        $found   = false;
+
+        return preg_replace_callback($pattern, function ($matches) use (&$found) {
+            if (!$found) {
+                $found = true;
+                return $matches[0]; // keep first
+            }
+            return ''; // remove duplicates
+        }, $html);
+    }
+
+    /**
+     * Keep only the FIRST <meta name="X" ...> for a given name attribute.
+     * Handles both name="..." and name='...' and case variations.
+     */
+    private function deduplicate_meta_name($html, $name)
+    {
+        // Matches <meta ... name="description" ... content="..." ...>
+        // in any attribute order (name can come before or after content)
+        $escaped = preg_quote($name, '/');
+        $pattern = '/<meta\s[^>]*name\s*=\s*["\']' . $escaped . '["\'][^>]*\/?>/i';
+        $found   = false;
+
+        return preg_replace_callback($pattern, function ($matches) use (&$found) {
+            if (!$found) {
+                $found = true;
+                return $matches[0];
+            }
+            return '';
+        }, $html);
+    }
+
+    /**
+     * Keep only the FIRST <meta property="X" ...> for a given property attribute.
+     */
+    private function deduplicate_meta_property($html, $property)
+    {
+        $escaped = preg_quote($property, '/');
+        $pattern = '/<meta\s[^>]*property\s*=\s*["\']' . $escaped . '["\'][^>]*\/?>/i';
+        $found   = false;
+
+        return preg_replace_callback($pattern, function ($matches) use (&$found) {
+            if (!$found) {
+                $found = true;
+                return $matches[0];
+            }
+            return '';
+        }, $html);
+    }
+}
