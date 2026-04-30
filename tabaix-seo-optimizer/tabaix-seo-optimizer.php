@@ -48,7 +48,7 @@ $includes = [
     'includes/class-uam-ajax.php',
     'includes/class-uam-admin.php',
 
-    // ── New features added in Tabaix SEO Suite Pro v2 ──
+    // ── New features added in Tabaix All-in-One SEO & Optimizer v2 ──
     'includes/class-tsp-toc.php',           // Table of Contents (auto + shortcode)
     'includes/class-tsp-pros-cons.php',     // Pros & Cons Schema block
     'includes/class-tsp-imagetight.php',    // ImageTight image optimizer module

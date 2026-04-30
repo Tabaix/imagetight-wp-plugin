@@ -55,7 +55,7 @@ class UAM_API
         $custom_gemini_key = UAM_Settings::get('gemini_api_key');
 
         if (empty($custom_gemini_key)) {
-            return new WP_Error('no_key', __('Please go to Settings and enter your free Google AI Studio key to use Gemini AI features.', 'tabaix-seo-suite'));
+            return new WP_Error('no_key', __('Please go to Settings and enter your free Google AI Studio key to use Gemini AI features.', 'tabaix-seo-optimizer'));
         }
 
         $model = $model ?? UAM_Settings::get('gemini_model', self::DEFAULT_GEMINI_MODEL);
@@ -316,7 +316,7 @@ class UAM_API
     {
         $api_key = UAM_Settings::get('openai_api_key');
         if (empty($api_key)) {
-            return new WP_Error('no_key', __('OpenAI API key is not configured. Please go to Settings → API Configuration and add your key.', 'tabaix-seo-suite'));
+            return new WP_Error('no_key', __('OpenAI API key is not configured. Please go to Settings → API Configuration and add your key.', 'tabaix-seo-optimizer'));
         }
 
         $model = $model ?? UAM_Settings::get('openai_model', self::DEFAULT_OPENAI_MODEL);
@@ -446,7 +446,7 @@ class UAM_API
     {
         $api_key = UAM_Settings::get('openai_api_key');
         if (empty($api_key)) {
-            return new WP_Error('no_key', __('OpenAI API key is not configured.', 'tabaix-seo-suite'));
+            return new WP_Error('no_key', __('OpenAI API key is not configured.', 'tabaix-seo-optimizer'));
         }
 
         $url = self::OPENAI_BASE . 'images/generations';

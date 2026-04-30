@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) exit;
 
 /**
- * TSP_Pros_Cons — Pros & Cons Schema Block for Tabaix SEO Suite Pro
+ * TSP_Pros_Cons — Pros & Cons Schema Block for Tabaix All-in-One SEO & Optimizer
  *
  * Features:
  *  - [tsp_pros_cons] shortcode (no API needed)

@@ -2,7 +2,7 @@
 if (!defined('ABSPATH')) exit;
 
 /**
- * TSP_TOC — Table of Contents for Tabaix SEO Suite Pro
+ * TSP_TOC — Table of Contents for Tabaix All-in-One SEO & Optimizer
  *
  * Features:
  *  - Auto-inserts TOC into all single posts (configurable)
@@ -174,12 +174,12 @@ class TSP_TOC
         ob_start();
         ?>
         <nav class="tabai-toc-container <?php echo esc_attr('layout-' . ($attributes['layout'] ?? 'boxed')); ?>"
-            aria-label="<?php esc_attr_e('Table of Contents', 'tabaix-seo-suite'); ?>">
+            aria-label="<?php esc_attr_e('Table of Contents', 'tabaix-seo-optimizer'); ?>">
             <?php if (!empty($attributes['showTitle'])): ?>
                 <div class="tabai-toc-header">
                     <h2 class="tabai-toc-title"><?php echo esc_html($attributes['title'] ?? 'Table of Contents'); ?></h2>
                     <button class="tabai-toc-toggle" aria-expanded="true"
-                        aria-label="<?php esc_attr_e('Toggle Table of Contents', 'tabaix-seo-suite'); ?>">
+                        aria-label="<?php esc_attr_e('Toggle Table of Contents', 'tabaix-seo-optimizer'); ?>">
                         <span class="dashicons dashicons-arrow-down-alt2"></span>
                     </button>
                 </div>
@@ -197,14 +197,14 @@ class TSP_TOC
         </nav>
 
         <?php if (!empty($attributes['backToTop'])): ?>
-            <button class="tabai-toc-back-to-top" aria-label="<?php esc_attr_e('Back to Top', 'tabaix-seo-suite'); ?>"
+            <button class="tabai-toc-back-to-top" aria-label="<?php esc_attr_e('Back to Top', 'tabaix-seo-optimizer'); ?>"
                 style="display:none;">
                 <span class="dashicons dashicons-arrow-up-alt2"></span>
             </button>
         <?php endif; ?>
 
         <?php if (!empty($attributes['floatingMobileBtn'])): ?>
-            <button class="tabai-toc-mobile-trigger" aria-label="<?php esc_attr_e('Table of Contents', 'tabaix-seo-suite'); ?>">
+            <button class="tabai-toc-mobile-trigger" aria-label="<?php esc_attr_e('Table of Contents', 'tabaix-seo-optimizer'); ?>">
                 <span class="dashicons dashicons-list-view"></span>
             </button>
         <?php endif; ?>

@@ -24,8 +24,8 @@ class UAM_Admin
     public function register_menus()
     {
         add_menu_page(
-            __('Ultimate AI Master', 'tabaix-seo-suite'),
-            __('Ultimate AI', 'tabaix-seo-suite'),
+            __('Ultimate AI Master', 'tabaix-seo-optimizer'),
+            __('Ultimate AI', 'tabaix-seo-optimizer'),
             'edit_posts',
             'uam-dashboard',
             [$this, 'page_dashboard'],

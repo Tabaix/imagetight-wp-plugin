@@ -33,7 +33,7 @@ class UAM_Comment_Moderator
             $json = json_decode($result, true);
             if ($json && isset($json['decision'])) {
                 if ($json['decision'] === 'spam' || $json['decision'] === 'reject') {
-                    wp_die(esc_html__('Your comment was flagged as inappropriate by our AI moderator.', 'tabaix-seo-suite'), 403);
+                    wp_die(esc_html__('Your comment was flagged as inappropriate by our AI moderator.', 'tabaix-seo-optimizer'), 403);
                 }
                 if ($json['decision'] === 'hold') {
                     $comment_data['comment_approved'] = '0'; // Hold for review

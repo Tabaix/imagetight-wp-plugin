@@ -2,10 +2,10 @@
 if (!defined('ABSPATH')) exit;
 
 /**
- * TSP_ImageTight — Image Compression Module for Tabaix SEO Suite Pro
+ * TSP_ImageTight — Image Compression Module for Tabaix All-in-One SEO & Optimizer
  *
  * Integrates the full ImageTight plugin functionality directly into the
- * Tabaix SEO Suite Pro admin interface as a dedicated module tab.
+ * Tabaix All-in-One SEO & Optimizer admin interface as a dedicated module tab.
  *
  * The standalone imagetight-companion.php plugin still works independently.
  * This module SHARES the same option keys (itc_api_key etc.) so settings
