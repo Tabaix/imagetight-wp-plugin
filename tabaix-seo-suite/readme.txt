@@ -1,5 +1,5 @@
 === Tabaix SEO Suite Pro ===
-Contributors: tabaidev
+Contributors: tabaix
 Tags: image compression, webp, avif, seo, internal linking, artificial intelligence, content generation
 Requires at least: 6.0
 Tested up to: 6.9
@@ -63,6 +63,39 @@ It analyzes your existing posts and uses advanced AI to build semantic relations
 3. Internal Linking — Semantic post suggestions
 4. Content Generator — SEO meta drafting
 5. Settings — API configuration
+
+== External Services ==
+
+This plugin connects to the following external services:
+
+= ImageTight API =
+Used for: Bulk image compression of WordPress media library images
+Data sent: Image files from your media library when you run compression
+API endpoint: https://imagetight-api.vercel.app
+Terms of Service: https://imagetight.com/terms
+Privacy Policy: https://imagetight.com/privacy
+
+= OpenAI API =
+Used for: AI-powered SEO suggestions and content analysis
+Data sent: Post content and meta data when you use AI features
+You must provide your own OpenAI API key
+Terms of Service: https://openai.com/terms
+Privacy Policy: https://openai.com/privacy
+
+= Google Gemini API =
+Used for: AI image generation and content suggestions
+Data sent: Text prompts when you use AI generation features
+You must provide your own Google AI Studio API key
+Terms of Service: https://ai.google.dev/terms
+Privacy Policy: https://policies.google.com/privacy
+
+NOTE: The ImageTight compression feature sends image files to 
+imagetight-api.vercel.app for processing. Images are not stored 
+permanently. See privacy policy for details.
+
+== Source Code ==
+The full source code for this plugin is available at:
+https://github.com/Tabaix/image-tight
 
 == Changelog ==
 

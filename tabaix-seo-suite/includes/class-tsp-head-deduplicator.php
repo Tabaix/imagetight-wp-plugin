@@ -80,7 +80,7 @@ class TSP_Head_Deduplicator
         $html = $this->deduplicate_meta_name($html, 'twitter:description');
         $html = $this->deduplicate_meta_name($html, 'twitter:image');
 
-        echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+        echo wp_kses_post($html);
     }
 
     // ── Deduplication helpers ─────────────────────────────────────────────────

@@ -1422,7 +1422,7 @@ class UAM_Admin
 
     public function page_settings()
     {
-        if (isset($_POST['_wpnonce']) && wp_verify_nonce($_POST['_wpnonce'], 'uam_settings_nonce')) {
+        if (isset($_POST['_wpnonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), 'uam_settings_nonce')) {
             $settings = UAM_Settings::get();
             $settings['provider'] = sanitize_key($_POST['provider'] ?? 'gemini');
             $settings['gemini_api_key'] = sanitize_text_field($_POST['gemini_api_key'] ?? '');

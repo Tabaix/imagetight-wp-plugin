@@ -55,6 +55,23 @@ class TSP_ImageTight
 
         // Auto-compress on upload (if enabled)
         add_filter('wp_generate_attachment_metadata', [$this, 'auto_compress_on_upload'], 10, 2);
+
+        // Enqueue scripts
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
+    }
+
+    public function enqueue_scripts($hook)
+    {
+        // Only load on our settings page or if it's the media page
+        if (strpos($hook, 'uam-seo-suite') === false && $hook !== 'upload.php') return;
+
+        wp_enqueue_script('tsp-imagetight-script', plugins_url('../assets/js/tsp-imagetight.js', __FILE__), ['jquery'], '1.0.0', true);
+        
+        $api_key = get_option(self::OPT_API_KEY, '');
+        wp_localize_script('tsp-imagetight-script', 'tsp_itc_data', [
+            'nonce'  => wp_create_nonce('uam_admin_nonce'),
+            'hasKey' => !empty($api_key)
+        ]);
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -235,143 +252,6 @@ class TSP_ImageTight
                 <span id="tsp-itc-save-status" style="font-size:12px;margin-left:12px;color:#065F46;"></span>
             </div>
         </div>
-
-        <script>
-        (function($) {
-            var nonce = '<?php echo esc_js(wp_create_nonce('uam_admin_nonce')); ?>';
-
-            // Tab switching
-            $('.tss-tab').on('click', function(e) {
-                e.preventDefault();
-                $('.tss-tab').removeClass('active');
-                $(this).addClass('active');
-                $('.tsp-tab-pane').hide();
-                $('#' + $(this).data('tab')).show();
-            });
-
-            // Load quota on page load
-            if ('<?php echo $has_key ? 'yes' : ''; ?>') {
-                $.post(ajaxurl, { action: 'tsp_itc_quota', nonce: nonce }, function(r) {
-                    if (r.success && r.data) {
-                        var left = r.data.credits_remaining ?? r.data.remaining ?? '';
-                        if (left !== '') {
-                            $('#tsp-quota-val').text(left);
-                            $('#tsp-quota-badge').show();
-                        }
-                    }
-                });
-            }
-
-            // Scan
-            $('#tsp-scan-btn').on('click', function() {
-                var $btn = $(this);
-                $btn.text('⏳ Scanning...').prop('disabled', true);
-                $('#tsp-scan-results').html('');
-                $('#tsp-scan-status').text('');
-                $.post(ajaxurl, { action: 'tsp_itc_scan', nonce: nonce }, function(r) {
-                    $btn.text('🔍 Scan for Heavy Images').prop('disabled', false);
-                    if (!r.success || !r.data || !r.data.images) {
-                        $('#tsp-scan-results').html('<p style="color:#94A3B8;">No heavy images found. Your library is clean! 🎉</p>');
-                        return;
-                    }
-                    var images = r.data.images;
-                    $('#tsp-scan-status').text(images.length + ' heavy images found');
-                    if (images.length > 0) $('#tsp-bulk-btn').show();
-                    var html = '<table class="tss-table"><tr><th>Image</th><th>Filename</th><th>Size</th><th>Action</th></tr>';
-                    $.each(images, function(i, img) {
-                        html += '<tr id="tsp-row-' + img.id + '">';
-                        html += '<td><img src="' + img.thumb + '" style="width:50px;height:50px;object-fit:cover;border-radius:6px;"></td>';
-                        html += '<td style="font-size:12px;color:#64748B;">' + img.filename + '</td>';
-                        html += '<td><strong>' + img.size_fmt + '</strong></td>';
-                        html += '<td><button class="tss-btn tss-btn-sm tsp-compress-btn" data-id="' + img.id + '" data-path="' + img.path + '">🗜️ Compress</button></td>';
-                        html += '</tr>';
-                    });
-                    html += '</table>';
-                    $('#tsp-scan-results').html(html);
-                });
-            });
-
-            // Single compress
-            $(document).on('click', '.tsp-compress-btn', function() {
-                var $btn = $(this);
-                var id = $btn.data('id');
-                $btn.text('⏳').prop('disabled', true);
-                $.post(ajaxurl, { action: 'tsp_itc_compress', nonce: nonce, image_id: id }, function(r) {
-                    if (r.success) {
-                        $('#tsp-row-' + id + ' td:last').html('<span style="color:#16A34A;font-weight:700;">✅ ' + (r.data.saved_fmt || 'Saved') + '</span>');
-                    } else {
-                        $btn.text('❌ Failed').prop('disabled', false);
-                    }
-                });
-            });
-
-            // Bulk compress
-            $('#tsp-bulk-btn').on('click', function() {
-                var $btn = $(this);
-                var $rows = $('.tsp-compress-btn');
-                var total = $rows.length;
-                var done = 0;
-                if (!total) return;
-                $btn.prop('disabled', true);
-                $('#tsp-progress-wrap').show();
-                function processNext() {
-                    if (done >= total) {
-                        $btn.text('✅ All Done').prop('disabled', true);
-                        return;
-                    }
-                    var $b = $($rows[done]);
-                    var id = $b.data('id');
-                    $.post(ajaxurl, { action: 'tsp_itc_compress', nonce: nonce, image_id: id }, function() {
-                        done++;
-                        $('#tsp-progress-bar').css('width', Math.round((done/total)*100) + '%');
-                        processNext();
-                    });
-                }
-                processNext();
-            });
-
-            // Restore
-            $(document).on('click', '.tsp-restore-btn', function() {
-                if (!confirm('Restore original image? The compressed version will be replaced.')) return;
-                var id = $(this).data('id');
-                var $btn = $(this);
-                $btn.text('⏳').prop('disabled', true);
-                $.post(ajaxurl, { action: 'tsp_itc_restore', nonce: nonce, image_id: id }, function(r) {
-                    if (r.success) {
-                        $btn.closest('div').find('div').first().text('↩ Restored');
-                        $btn.remove();
-                    } else {
-                        $btn.text('❌').prop('disabled', false);
-                    }
-                });
-            });
-
-            // Save settings
-            $('#tsp-itc-save-settings, #tsp-itc-test-key').on('click', function() {
-                var $btn = $(this);
-                $btn.text('⏳ Saving...').prop('disabled', true);
-                $.post(ajaxurl, {
-                    action:    'tsp_itc_save_settings',
-                    nonce:     nonce,
-                    api_key:   $('#tsp-itc-apikey').val(),
-                    quality:   $('#tsp-itc-quality').val(),
-                    format:    $('#tsp-itc-format').val(),
-                    threshold: $('#tsp-itc-threshold').val(),
-                    auto:      $('#tsp-itc-auto').is(':checked') ? 1 : 0,
-                    backup:    $('#tsp-itc-backup').is(':checked') ? 1 : 0,
-                    gemini_key: $('#tsp-itc-gemini-key').val(),
-                }, function(r) {
-                    $btn.text($(this).attr('id') === 'tsp-itc-test-key' ? '🔑 Test & Save Key' : '💾 Save Settings').prop('disabled', false);
-                    if (r.success) {
-                        $('#tsp-itc-save-status').text('✅ Saved!').css('color','#16A34A');
-                    } else {
-                        $('#tsp-itc-save-status').text('❌ ' + (r.data || 'Error')).css('color','#DC2626');
-                    }
-                });
-            });
-
-        })(jQuery);
-        </script>
         <?php
     }
 
@@ -438,7 +318,10 @@ class TSP_ImageTight
         // Backup original
         $backup_path = '';
         if ($do_backup) {
-            $backup_path = $file_path . '.itc_backup';
+            $upload_dir = wp_upload_dir();
+            $backup_dir = $upload_dir['basedir'] . '/imagetight-backups/';
+            wp_mkdir_p($backup_dir);
+            $backup_path = $backup_dir . basename($file_path) . '.itc_backup';
             copy($file_path, $backup_path);
         }
 

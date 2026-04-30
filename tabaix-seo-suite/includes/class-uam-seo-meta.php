@@ -41,6 +41,7 @@ class UAM_SEO_Meta
         // Meta box on post editor — always show (we generate the data)
         add_action('add_meta_boxes', [$this, 'add_meta_box']);
         add_action('save_post', [$this, 'save_meta_box']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_scripts']);
 
         $seo_plugin = self::get_active_seo_plugin();
 
@@ -94,6 +95,20 @@ class UAM_SEO_Meta
         }
     }
 
+    public function enqueue_scripts($hook)
+    {
+        if (!in_array($hook, ['post.php', 'post-new.php'])) return;
+        wp_enqueue_style('uam-seo-meta-style', plugins_url('../assets/css/uam-seo-meta.css', __FILE__), [], '1.0.0');
+        wp_enqueue_script('uam-seo-meta-script', plugins_url('../assets/js/uam-seo-meta.js', __FILE__), ['jquery'], '1.0.0', true);
+        global $post;
+        wp_localize_script('uam-seo-meta-script', 'uam_seo_data', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('uam_admin_nonce'),
+            'postId' => isset($post->ID) ? $post->ID : 0,
+            'postTitle' => isset($post->ID) ? get_the_title($post->ID) : ''
+        ]);
+    }
+
     // ── Meta Box ─────────────────────────────────────────────────────────
 
     public function add_meta_box()
@@ -122,26 +137,6 @@ class UAM_SEO_Meta
         $meta_desc_len = strlen($meta_desc);
         ?>
         <div id="uam-seo-metabox-wrap">
-            <style>
-                #uam-seo-metabox-wrap { font-family: -apple-system, 'Inter', sans-serif; color: #1e293b; }
-                .uam-mb-tabs { display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 16px; }
-                .uam-mb-tab { padding: 10px 16px; cursor: pointer; font-size: 12px; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; transition: all .2s; }
-                .uam-mb-tab.active { color: #6366f1; border-bottom-color: #6366f1; background: rgba(99, 102, 241, 0.05); }
-                .uam-mb-content { display: none; }
-                .uam-mb-content.active { display: block; }
-                .uam-mb-row { margin-bottom: 14px; }
-                .uam-mb-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 5px; }
-                .uam-mb-input, .uam-mb-textarea, .uam-mb-select { width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 7px; font-size: 13px; color: #1e293b; background: #f8fafc; box-sizing: border-box; }
-                .uam-mb-btn { padding: 8px 16px; border-radius: 7px; border: none; cursor: pointer; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-                .uam-mb-btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
-                .uam-mb-btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-                .uam-mb-preview { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-top: 14px; }
-                .uam-mb-preview-title { font-size: 18px; color: #1a0dab; font-weight: 500; }
-                .uam-mb-preview-desc { font-size: 13px; color: #545454; line-height: 1.5; }
-                .uam-mb-loader { display: none; align-items: center; gap: 8px; font-size: 12px; color: #6366f1; padding: 10px 0; }
-                .uam-mb-spinner { width: 14px; height: 14px; border: 2px solid rgba(99, 102, 241, .2); border-top-color: #6366f1; border-radius: 50%; animation: uam-spin .7s linear infinite; }
-                @keyframes uam-spin { to { transform: rotate(360deg); } }
-            </style>
 
             <div class="uam-mb-tabs">
                 <div class="uam-mb-tab active" data-tab="meta">SEO Meta</div>
@@ -217,112 +212,6 @@ class UAM_SEO_Meta
                 <div class="uam-mb-spinner"></div>
                 <span>Processing...</span>
             </div>
-
-            <script>
-                (function($) {
-                    var ajaxUrl = '<?php echo esc_js(admin_url('admin-ajax.php')); ?>';
-                    var nonce = '<?php echo esc_js(wp_create_nonce('uam_admin_nonce')); ?>';
-                    var postId = <?php echo (int) $post->ID; ?>;
-
-                    // Tabs
-                    $('.uam-mb-tab').on('click', function() {
-                        var tab = $(this).data('tab');
-                        $('.uam-mb-tab, .uam-mb-content').removeClass('active');
-                        $(this).addClass('active');
-                        $('#uam-tab-' + tab).addClass('active');
-                    });
-
-                    function showLoader(msg) {
-                        $('#uam-mb-loader span').text(msg || 'Thinking...');
-                        $('#uam-mb-loader').css('display', 'flex');
-                    }
-                    function hideLoader() { $('#uam-mb-loader').hide(); }
-
-                    // SEO Meta
-                    $('#uam-btn-gen-meta').on('click', function() {
-                        showLoader('Generating SEO meta...');
-                        $.post(ajaxUrl, {
-                            action: 'uam_generate_meta',
-                            nonce: nonce,
-                            title: '<?php echo esc_js(get_the_title($post->ID)); ?>',
-                            keyword: $('#uam_focus_keyword').val()
-                        }, function(res) {
-                            hideLoader();
-                            if(res.success) {
-                                if(res.data.seo_title) $('#uam_seo_title').val(res.data.seo_title);
-                                if(res.data.meta_description) $('#uam_meta_description').val(res.data.meta_description);
-                            }
-                        });
-                    });
-
-                    // AI Image
-                    $('#uam-btn-gen-img').on('click', function() {
-                        var prompt = $('#uam-img-prompt').val();
-                        if(!prompt) return alert('Enter a prompt');
-                        showLoader('Generating image...');
-                        $('#uam-img-preview-area').html('');
-                        $('#uam-img-actions').hide();
-                        $.post(ajaxUrl, {
-                            action: 'uam_generate_image',
-                            nonce: nonce,
-                            post_title: '<?php echo esc_js(get_the_title($post->ID)); ?>',
-                            post_excerpt: prompt,
-                            style: $('#uam-img-style').val(),
-                            save_to_library: 1
-                        }, function(res) {
-                            hideLoader();
-                            if(res.success) {
-                                $('#uam-img-preview-area').html('<img src="'+res.data.image_url+'" style="width:100%; border-radius:10px">');
-                                if(res.data.attach_id) {
-                                    $('#uam-btn-set-feat').data('id', res.data.attach_id).parent().css('display', 'flex');
-                                }
-                            }
-                        });
-                    });
-
-                    $('#uam-btn-set-feat').on('click', function() {
-                        var id = $(this).data('id');
-                        showLoader('Setting featured image...');
-                        $.post(ajaxUrl, { action: 'uam_set_featured_image', nonce: nonce, post_id: postId, attach_id: id }, function(res) {
-                            hideLoader();
-                            alert(res.success ? 'Featured image set!' : 'Error: ' + res.data.message);
-                        });
-                    });
-
-                    // Vision
-                    $('#uam-btn-select-vision').on('click', function(e) {
-                        e.preventDefault();
-                        var frame = wp.media({ title: 'Select Image', button: { text: 'Use this image' }, multiple: false });
-                        frame.on('select', function() {
-                            var attachment = frame.state().get('selection').first().toJSON();
-                            $('#uam-vision-attach-id').val(attachment.id);
-                            $('#uam-vision-img-preview').html('<img src="'+attachment.url+'" style="width:80px;height:80px;object-fit:cover;border-radius:5px">');
-                        });
-                        frame.open();
-                    });
-
-                    $('#uam-btn-analyze-vision').on('click', function() {
-                        var id = $('#uam-vision-attach-id').val();
-                        if(!id) return alert('Select an image');
-                        showLoader('Analyzing image...');
-                        $('#uam-vision-results').html('');
-                        $.post(ajaxUrl, { action: 'uam_analyze_vision', nonce: nonce, attachment_id: id }, function(res) {
-                            hideLoader();
-                            if(res.success) {
-                                var d = res.data;
-                                $('#uam-vision-results').html('<div style="background:#f8fafc;padding:12px;border-radius:8px;font-size:13px"><p><strong>Title:</strong> <span id="uam-vis-title">'+d.title+'</span></p><p><strong>Alt:</strong> <span id="uam-vis-alt">'+d.alt+'</span></p><button type="button" class="uam-mb-btn uam-mb-btn-secondary" id="uam-btn-vis-apply">✅ Apply to SEO Meta</button></div>');
-                                
-                                $('#uam-btn-vis-apply').on('click', function() {
-                                    $('#uam_seo_title').val($('#uam-vis-title').text());
-                                    // Switch to Meta tab to show the change
-                                    $('.uam-mb-tab[data-tab="meta"]').trigger('click');
-                                });
-                            }
-                        });
-                    });
-
-                })(jQuery);
-            </script>
         </div>
         <?php
     }
@@ -331,7 +220,7 @@ class UAM_SEO_Meta
     {
         if (!isset($_POST['uam_seo_meta_nonce']))
             return;
-        if (!wp_verify_nonce($_POST['uam_seo_meta_nonce'], 'uam_seo_meta_nonce'))
+        if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['uam_seo_meta_nonce'])), 'uam_seo_meta_nonce'))
             return;
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)
             return;
