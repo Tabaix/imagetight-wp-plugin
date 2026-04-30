@@ -1,4 +1,4 @@
-=== Tabaix SEO Suite Pro ===
+=== Tabaix All-in-One SEO & Optimizer ===
 Contributors: tabaix
 Tags: image compression, webp, avif, seo, internal linking, artificial intelligence, content generation
 Requires at least: 6.0
@@ -38,7 +38,7 @@ A comprehensive optimization plugin featuring local in-browser image compression
 
 == Installation ==
 
-1. Upload the `tabaix-seo-suite` folder to `/wp-content/plugins/`
+1. Upload the `tabaix-seo-optimizer` folder to `/wp-content/plugins/`
 2. Activate the plugin through the WordPress **Plugins** menu.
 3. Configure your API options under the settings menu.
 
@@ -100,7 +100,7 @@ https://github.com/Tabaix/image-tight
 == Changelog ==
 
 = 2.0.0 =
-* Initial public release as Tabaix SEO Suite Pro.
+* Initial public release as Tabaix All-in-One SEO & Optimizer.
 * Integrated ImageTight web API for edge compression.
 * Added Internal Link AI Scanner.
 * Added support for Google Gemini via BYOK (Bring Your Own Key).

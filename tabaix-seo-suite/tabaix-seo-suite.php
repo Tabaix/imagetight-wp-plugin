@@ -1,13 +1,13 @@
 <?php
 /**
- * Plugin Name: Tabaix SEO Suite Pro
+ * Plugin Name: Tabaix All-in-One SEO & Optimizer
  * Plugin URI:  https://imagetight.tabaix.com/seo-plugin
  * Description: The all-in-one WordPress SEO + AI plugin — Content Generator, SEO Audit, Internal Linking, Alt Text, Image Optimizer (ImageTight), Table of Contents, Pros & Cons Schema, Auto Translate, Chatbot & more. Powered by YOUR OWN free Gemini or OpenAI API key.
  * Version:     2.0.0
  * Author:      Tayyab Ali (Tabaix)
  * Author URI:  https://tabaix.com
  * License:     GPL-2.0+
- * Text Domain: tabaix-seo-suite
+ * Text Domain: tabaix-seo-optimizer
  * Domain Path: /languages
  */
 
@@ -20,7 +20,7 @@ define('TSP_VERSION',     '2.0.0');
 define('TSP_PLUGIN_DIR',  plugin_dir_path(__FILE__));
 define('TSP_PLUGIN_URL',  plugin_dir_url(__FILE__));
 define('TSP_PLUGIN_FILE', __FILE__);
-define('TSP_TEXT_DOMAIN', 'tabaix-seo-suite');
+define('TSP_TEXT_DOMAIN', 'tabaix-seo-optimizer');
 
 // Legacy alias so all existing include files still work unchanged
 define('UAM_VERSION',     TSP_VERSION);
