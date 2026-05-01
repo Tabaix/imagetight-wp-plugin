@@ -14,15 +14,22 @@ class TSP_SEO_Translator
 {
     private static $instance = null;
 
-    // Supported Languages
-    private $languages = [
+    // Supported Languages (Master List)
+    private $all_languages = [
         'ar' => 'Arabic',
-        'es' => 'Spanish',
+        'zh-CN' => 'Chinese (Simplified)',
+        'nl' => 'Dutch',
         'fr' => 'French',
         'de' => 'German',
-        'zh' => 'Chinese (Simplified)',
         'hi' => 'Hindi',
-        'pt' => 'Portuguese'
+        'it' => 'Italian',
+        'ja' => 'Japanese',
+        'ko' => 'Korean',
+        'pt' => 'Portuguese',
+        'ru' => 'Russian',
+        'es' => 'Spanish',
+        'tr' => 'Turkish',
+        'ur' => 'Urdu'
     ];
 
     public static function get_instance()
@@ -89,7 +96,7 @@ class TSP_SEO_Translator
         echo '<h3>Premium SEO Languages (Cost: 1 API Credit per Post)</h3>';
         echo '<p>These languages will be automatically translated and permanently saved to your database whenever you publish a new post. This guarantees Google indexing and high organic traffic.</p>';
         
-        foreach ($this->languages as $code => $name) {
+        foreach ($this->all_languages as $code => $name) {
             $checked = in_array($code, $seo_langs) ? 'checked' : '';
             echo '<label style="display:inline-block; width:200px; margin-bottom:10px;">';
             echo '<input type="checkbox" name="tsp_seo_langs[]" value="' . esc_attr($code) . '" ' . $checked . '> ' . esc_html($name);
@@ -100,8 +107,9 @@ class TSP_SEO_Translator
         echo '<h3>Free Live Translations (Cost: 0 Credits)</h3>';
         echo '<p>These languages will appear in the frontend dropdown but will be translated instantly in the users browser using Google Translate. Excellent for global accessibility, but they do NOT rank in Google.</p>';
 
-        $all_free = ['hi' => 'Hindi', 'ja' => 'Japanese', 'ru' => 'Russian', 'it' => 'Italian', 'ko' => 'Korean', 'tr' => 'Turkish', 'nl' => 'Dutch'];
-        foreach ($all_free as $code => $name) {
+        foreach ($this->all_languages as $code => $name) {
+            // Option to skip showing it in Free if it's already selected as Premium, 
+            // but we allow them to check both if they want, the frontend logic handles it cleanly.
             $checked = in_array($code, $free_langs) ? 'checked' : '';
             echo '<label style="display:inline-block; width:200px; margin-bottom:10px;">';
             echo '<input type="checkbox" name="tsp_free_langs[]" value="' . esc_attr($code) . '" ' . $checked . '> ' . esc_html($name);
@@ -136,7 +144,7 @@ class TSP_SEO_Translator
             $title_payload = [
                 'tabaix_license_key' => $api_key,
                 'text' => $post->post_title,
-                'target_language' => $this->languages[$lang_code]
+                'target_language' => $this->all_languages[$lang_code] ?? $lang_code
             ];
             $title_response = wp_remote_post('https://imagetight-api.vercel.app/api/translate', [
                 'body' => json_encode($title_payload),
@@ -148,7 +156,7 @@ class TSP_SEO_Translator
             $content_payload = [
                 'tabaix_license_key' => $api_key,
                 'text' => $post->post_content,
-                'target_language' => $this->languages[$lang_code]
+                'target_language' => $this->all_languages[$lang_code] ?? $lang_code
             ];
             $content_response = wp_remote_post('https://imagetight-api.vercel.app/api/translate', [
                 'body' => json_encode($content_payload),
@@ -175,7 +183,7 @@ class TSP_SEO_Translator
     ─────────────────────────────────────────────── */
     public function add_rewrite_rules()
     {
-        $lang_codes = implode('|', array_keys($this->languages));
+        $lang_codes = implode('|', array_keys($this->all_languages));
         // Add rule for /lang/post-name
         add_rewrite_rule(
             '^(' . $lang_codes . ')/([^/]+)/?$',
@@ -285,8 +293,8 @@ class TSP_SEO_Translator
                 return;
             }
 
-            // If the browser language matches one of our supported translations
-            if (array_key_exists($lang_code, $this->languages)) {
+            // If the browser language matches one of our supported Premium translations
+            if (array_key_exists($lang_code, $this->all_languages)) {
                 // Check if this specific post has actually been translated to that language
                 if (get_post_meta($post_id, '_tsp_translation_' . $lang_code . '_title', true)) {
                     
@@ -322,7 +330,7 @@ class TSP_SEO_Translator
         $seo_langs = get_option('tsp_seo_langs', []);
         if (is_array($seo_langs) && !empty($seo_langs)) {
             $html .= '<optgroup label="Premium SEO Translations">';
-            foreach ($this->languages as $code => $name) {
+            foreach ($this->all_languages as $code => $name) {
                 if (in_array($code, $seo_langs) && get_post_meta($post_id, '_tsp_translation_' . $code . '_title', true)) {
                     $lang_url = home_url('/' . $code . '/' . basename(untrailingslashit($original_url)) . '/');
                     $selected = ($current_lang === $code) ? 'selected' : '';
@@ -335,11 +343,15 @@ class TSP_SEO_Translator
         // Free Fallback Languages (Google Translate)
         $free_langs = get_option('tsp_free_langs', []);
         if (is_array($free_langs) && !empty($free_langs)) {
-            $all_free = ['hi' => 'Hindi', 'ja' => 'Japanese', 'ru' => 'Russian', 'it' => 'Italian', 'ko' => 'Korean', 'tr' => 'Turkish', 'nl' => 'Dutch'];
             $html .= '<optgroup label="Live Translations (Free)">';
             foreach ($free_langs as $code) {
-                if (isset($all_free[$code])) {
-                    $html .= '<option value="' . esc_attr($code) . '">' . esc_html($all_free[$code]) . '</option>';
+                // Do not display in free list if it was already rendered in the Premium list
+                if (in_array($code, $seo_langs) && get_post_meta($post_id, '_tsp_translation_' . $code . '_title', true)) {
+                    continue; 
+                }
+                
+                if (isset($this->all_languages[$code])) {
+                    $html .= '<option value="' . esc_attr($code) . '">' . esc_html($this->all_languages[$code]) . '</option>';
                 }
             }
             $html .= '</optgroup>';
