@@ -179,7 +179,7 @@ class TSP_SEO_Translator
     {
         if (!is_singular() || !in_the_loop() || !is_main_query()) return $content;
 
-        // 1. Check if we are viewing a translated URL
+        // 1. Check if we are viewing a translated SEO URL
         $lang = get_query_var('tsp_lang');
         if ($lang) {
             $translated_content = get_post_meta(get_the_ID(), '_tsp_translation_' . $lang . '_content', true);
@@ -190,8 +190,28 @@ class TSP_SEO_Translator
             }
         }
 
-        // 2. Add Language Switcher Dropdown to the top
-        return $this->get_language_switcher() . $content;
+        // 2. Add Language Switcher Dropdown & Google Translate Fallback
+        return $this->get_language_switcher() . $content . $this->get_google_translate_script();
+    }
+
+    private function get_google_translate_script()
+    {
+        return '
+        <div id="google_translate_element" style="display:none;"></div>
+        <script type="text/javascript">
+            function googleTranslateElementInit() {
+                new google.translate.TranslateElement({pageLanguage: "en", autoDisplay: false}, "google_translate_element");
+            }
+            function triggerGoogleTranslate(langCode) {
+                var selectField = document.querySelector("select.goog-te-combo");
+                if (selectField) {
+                    selectField.value = langCode;
+                    selectField.dispatchEvent(new Event("change"));
+                }
+            }
+        </script>
+        <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+        ';
     }
 
     public function inject_hreflang_tags()
@@ -264,18 +284,33 @@ class TSP_SEO_Translator
 
         $html = '<div class="tsp-language-switcher" style="margin-bottom: 20px; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: inline-block;">';
         $html .= '<strong style="margin-right: 10px;">🌍 Read in:</strong>';
-        $html .= '<select onchange="window.location.href=this.value" style="padding: 5px; border-radius: 5px;">';
+        
+        // Custom dropdown logic
+        $html .= '<select onchange="if(this.value.startsWith(\'http\')) { window.location.href=this.value; } else if(this.value !== \'\') { triggerGoogleTranslate(this.value); }" style="padding: 5px; border-radius: 5px; min-width: 150px;">';
         
         $en_selected = ($current_lang === 'en') ? 'selected' : '';
-        $html .= '<option value="' . esc_url($original_url) . '" ' . $en_selected . '>English (Original)</option>';
+        $html .= '<option value="' . esc_url($original_url) . '" ' . $en_selected . '>🇬🇧 English (Original)</option>';
 
+        $html .= '<optgroup label="Premium SEO Translations">';
         foreach ($this->languages as $code => $name) {
             if (get_post_meta($post_id, '_tsp_translation_' . $code . '_title', true)) {
                 $lang_url = home_url('/' . $code . '/' . basename(untrailingslashit($original_url)) . '/');
                 $selected = ($current_lang === $code) ? 'selected' : '';
-                $html .= '<option value="' . esc_url($lang_url) . '" ' . $selected . '>' . esc_html($name) . '</option>';
+                $html .= '<option value="' . esc_url($lang_url) . '" ' . $selected . '>✨ ' . esc_html($name) . '</option>';
             }
         }
+        $html .= '</optgroup>';
+
+        // Free Fallback Languages (Google Translate)
+        $html .= '<optgroup label="Live Translations (Free)">';
+        $html .= '<option value="hi">🇮🇳 Hindi</option>';
+        $html .= '<option value="ja">🇯🇵 Japanese</option>';
+        $html .= '<option value="ru">🇷🇺 Russian</option>';
+        $html .= '<option value="it">🇮🇹 Italian</option>';
+        $html .= '<option value="ko">🇰🇷 Korean</option>';
+        $html .= '<option value="tr">🇹🇷 Turkish</option>';
+        $html .= '<option value="nl">🇳🇱 Dutch</option>';
+        $html .= '</optgroup>';
 
         $html .= '</select></div>';
         return $html;
