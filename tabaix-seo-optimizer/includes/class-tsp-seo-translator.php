@@ -36,8 +36,8 @@ class TSP_SEO_Translator
     private function __construct()
     {
         // Settings & Admin
+        add_action('admin_menu', [$this, 'register_admin_page']);
         add_action('admin_init', [$this, 'register_settings']);
-        add_action('add_meta_boxes', [$this, 'add_translation_metabox']);
         add_action('save_post', [$this, 'handle_auto_translation'], 10, 3);
 
         // Frontend Virtual Pages (Rewrite Rules)
@@ -56,53 +56,82 @@ class TSP_SEO_Translator
     ─────────────────────────────────────────────── */
     public function register_settings()
     {
-        register_setting('tabaix-seo-optimizer', 'tsp_translator_enabled', ['sanitize_callback' => 'absint', 'default' => 0]);
+        register_setting('tsp_translator_group', 'tsp_seo_langs');
+        register_setting('tsp_translator_group', 'tsp_free_langs');
     }
 
-    public function add_translation_metabox()
+    public function register_admin_page()
     {
-        if (!get_option('tsp_translator_enabled', 0)) return;
-        add_meta_box('tsp_translation_box', '🌍 AI Auto-Translator (SEO)', [$this, 'render_metabox'], ['post', 'page'], 'side', 'high');
+        add_submenu_page(
+            'uam-dashboard',
+            'Global Translations',
+            '🌍 Translations',
+            'manage_options',
+            'tsp-global-translations',
+            [$this, 'render_admin_page']
+        );
     }
 
-    public function render_metabox($post)
+    public function render_admin_page()
     {
-        wp_nonce_field('tsp_translate_nonce', 'tsp_translate_nonce_val');
-        $api_key = get_option('tsp_imagetight_api_key', '');
+        $seo_langs = get_option('tsp_seo_langs', []);
+        $free_langs = get_option('tsp_free_langs', []);
+        if (!is_array($seo_langs)) $seo_langs = [];
+        if (!is_array($free_langs)) $free_langs = [];
 
-        if (empty($api_key)) {
-            echo '<p style="color:red;">Please enter your Tabaix API key in the settings to enable translations.</p>';
-            return;
-        }
+        echo '<div class="wrap">';
+        echo '<h1>Global SEO Translations</h1>';
+        echo '<p>Configure how your blog posts are translated across your entire site automatically.</p>';
+        
+        echo '<form method="post" action="options.php">';
+        settings_fields('tsp_translator_group');
 
-        echo '<p><strong>Generate translations upon saving:</strong></p>';
+        echo '<h3>Premium SEO Languages (Cost: 1 API Credit per Post)</h3>';
+        echo '<p>These languages will be automatically translated and permanently saved to your database whenever you publish a new post. This guarantees Google indexing and high organic traffic.</p>';
+        
         foreach ($this->languages as $code => $name) {
-            $existing = get_post_meta($post->ID, '_tsp_translation_' . $code . '_title', true);
-            $status = $existing ? '<span style="color:green;">(Translated)</span>' : '';
-            echo '<label style="display:block; margin-bottom:5px;">';
-            echo '<input type="checkbox" name="tsp_translate_langs[]" value="' . esc_attr($code) . '"> ';
-            echo esc_html($name) . ' ' . $status;
+            $checked = in_array($code, $seo_langs) ? 'checked' : '';
+            echo '<label style="display:inline-block; width:200px; margin-bottom:10px;">';
+            echo '<input type="checkbox" name="tsp_seo_langs[]" value="' . esc_attr($code) . '" ' . $checked . '> ' . esc_html($name);
             echo '</label>';
         }
-        echo '<p style="font-size:11px; color:#666;">Check languages to instantly translate via Cloud API on save. (Uses 1 SaaS credit per language).</p>';
+
+        echo '<hr style="margin: 20px 0;">';
+        echo '<h3>Free Live Translations (Cost: 0 Credits)</h3>';
+        echo '<p>These languages will appear in the frontend dropdown but will be translated instantly in the users browser using Google Translate. Excellent for global accessibility, but they do NOT rank in Google.</p>';
+
+        $all_free = ['hi' => 'Hindi', 'ja' => 'Japanese', 'ru' => 'Russian', 'it' => 'Italian', 'ko' => 'Korean', 'tr' => 'Turkish', 'nl' => 'Dutch'];
+        foreach ($all_free as $code => $name) {
+            $checked = in_array($code, $free_langs) ? 'checked' : '';
+            echo '<label style="display:inline-block; width:200px; margin-bottom:10px;">';
+            echo '<input type="checkbox" name="tsp_free_langs[]" value="' . esc_attr($code) . '" ' . $checked . '> ' . esc_html($name);
+            echo '</label>';
+        }
+
+        echo '<br><br>';
+        submit_button('Save Global Translation Settings');
+        echo '</form>';
+        echo '</div>';
     }
 
     /* ───────────────────────────────────────────────
-       Translation Trigger (Save Post)
+       Translation Trigger (Save Post - Global)
     ─────────────────────────────────────────────── */
     public function handle_auto_translation($post_id, $post, $update)
     {
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-        if (!isset($_POST['tsp_translate_nonce_val']) || !wp_verify_nonce($_POST['tsp_translate_nonce_val'], 'tsp_translate_nonce')) return;
         if (!current_user_can('edit_post', $post_id)) return;
-        if (empty($_POST['tsp_translate_langs'])) return;
+        if ($post->post_status !== 'publish') return; // Only translate when it's fully published
 
         $api_key = get_option('tsp_imagetight_api_key', '');
         if (empty($api_key)) return;
 
-        $langs_to_translate = $_POST['tsp_translate_langs'];
+        $langs_to_translate = get_option('tsp_seo_langs', []);
+        if (empty($langs_to_translate) || !is_array($langs_to_translate)) return;
 
         foreach ($langs_to_translate as $lang_code) {
+            // Prevent re-translating if it already exists
+            if (get_post_meta($post_id, '_tsp_translation_' . $lang_code . '_title', true)) continue;
             // Translate Title
             $title_payload = [
                 'tabaix_license_key' => $api_key,
@@ -146,7 +175,6 @@ class TSP_SEO_Translator
     ─────────────────────────────────────────────── */
     public function add_rewrite_rules()
     {
-        if (!get_option('tsp_translator_enabled', 0)) return;
         $lang_codes = implode('|', array_keys($this->languages));
         // Add rule for /lang/post-name
         add_rewrite_rule(
@@ -291,26 +319,31 @@ class TSP_SEO_Translator
         $en_selected = ($current_lang === 'en') ? 'selected' : '';
         $html .= '<option value="' . esc_url($original_url) . '" ' . $en_selected . '>🇬🇧 English (Original)</option>';
 
-        $html .= '<optgroup label="Premium SEO Translations">';
-        foreach ($this->languages as $code => $name) {
-            if (get_post_meta($post_id, '_tsp_translation_' . $code . '_title', true)) {
-                $lang_url = home_url('/' . $code . '/' . basename(untrailingslashit($original_url)) . '/');
-                $selected = ($current_lang === $code) ? 'selected' : '';
-                $html .= '<option value="' . esc_url($lang_url) . '" ' . $selected . '>✨ ' . esc_html($name) . '</option>';
+        $seo_langs = get_option('tsp_seo_langs', []);
+        if (is_array($seo_langs) && !empty($seo_langs)) {
+            $html .= '<optgroup label="Premium SEO Translations">';
+            foreach ($this->languages as $code => $name) {
+                if (in_array($code, $seo_langs) && get_post_meta($post_id, '_tsp_translation_' . $code . '_title', true)) {
+                    $lang_url = home_url('/' . $code . '/' . basename(untrailingslashit($original_url)) . '/');
+                    $selected = ($current_lang === $code) ? 'selected' : '';
+                    $html .= '<option value="' . esc_url($lang_url) . '" ' . $selected . '>✨ ' . esc_html($name) . '</option>';
+                }
             }
+            $html .= '</optgroup>';
         }
-        $html .= '</optgroup>';
 
         // Free Fallback Languages (Google Translate)
-        $html .= '<optgroup label="Live Translations (Free)">';
-        $html .= '<option value="hi">🇮🇳 Hindi</option>';
-        $html .= '<option value="ja">🇯🇵 Japanese</option>';
-        $html .= '<option value="ru">🇷🇺 Russian</option>';
-        $html .= '<option value="it">🇮🇹 Italian</option>';
-        $html .= '<option value="ko">🇰🇷 Korean</option>';
-        $html .= '<option value="tr">🇹🇷 Turkish</option>';
-        $html .= '<option value="nl">🇳🇱 Dutch</option>';
-        $html .= '</optgroup>';
+        $free_langs = get_option('tsp_free_langs', []);
+        if (is_array($free_langs) && !empty($free_langs)) {
+            $all_free = ['hi' => 'Hindi', 'ja' => 'Japanese', 'ru' => 'Russian', 'it' => 'Italian', 'ko' => 'Korean', 'tr' => 'Turkish', 'nl' => 'Dutch'];
+            $html .= '<optgroup label="Live Translations (Free)">';
+            foreach ($free_langs as $code) {
+                if (isset($all_free[$code])) {
+                    $html .= '<option value="' . esc_attr($code) . '">' . esc_html($all_free[$code]) . '</option>';
+                }
+            }
+            $html .= '</optgroup>';
+        }
 
         $html .= '</select></div>';
         return $html;
