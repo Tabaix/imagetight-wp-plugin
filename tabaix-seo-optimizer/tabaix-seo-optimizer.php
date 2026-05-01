@@ -53,6 +53,8 @@ $includes = [
     'includes/class-tsp-pros-cons.php',     // Pros & Cons Schema block
     'includes/class-tsp-imagetight.php',    // ImageTight image optimizer module
     'includes/class-tsp-head-deduplicator.php', // Removes duplicate meta tags (works with ANY SEO plugin)
+    'includes/class-tsp-social-share.php',  // Social Share Buttons
+    'includes/class-tsp-seo-translator.php',// Auto SEO Translator
 ];
 
 foreach ($includes as $file) {
@@ -100,6 +102,10 @@ function uam_init()
     // Nuclear duplicate meta tag remover — works with ANY plugin combination
     // Runs last (inside wp_head output buffer) removing dupes before browser sees them
     TSP_Head_Deduplicator::get_instance();
+    
+    // Social Share Buttons & SEO Translator
+    TSP_Social_Share::get_instance();
+    TSP_SEO_Translator::get_instance();
 }
 add_action('plugins_loaded', 'uam_init');
 
