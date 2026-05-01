@@ -35,6 +35,7 @@ class ITC_Pro_Companion {
 
         if(isset($_POST['api_key'])) {
             update_option('itc_api_key', sanitize_text_field(wp_unslash($_POST['api_key'])));
+            update_option('itc_api_url', isset($_POST['api_url']) ? esc_url_raw(wp_unslash($_POST['api_url'])) : 'https://imagetight-api.vercel.app');
             update_option('itc_compression_quality', isset($_POST['quality']) ? intval(wp_unslash($_POST['quality'])) : 75);
             update_option('itc_output_format', isset($_POST['format']) ? sanitize_text_field(wp_unslash($_POST['format'])) : 'webp');
             update_option('itc_scan_threshold', isset($_POST['threshold']) ? intval(wp_unslash($_POST['threshold'])) : 150);
@@ -50,13 +51,17 @@ class ITC_Pro_Companion {
         $api_key = get_option('itc_api_key');
         if(empty($api_key)) wp_send_json_error('No key set');
         
-        $api_url = 'https://imagetight-api.vercel.app/api/quota';
-        $quota_url = add_query_arg('api_key', urlencode($api_key), $api_url);
+        $api_url = get_option('itc_api_url', 'https://imagetight-api.vercel.app');
+        $quota_url = $api_url . '/api/quota?api_key=' . urlencode($api_key);
         
         $response = wp_remote_get($quota_url);
-        if(is_wp_error($response)) wp_send_json_error();
+        if(is_wp_error($response)) wp_send_json_error('API unreachable');
         
-        wp_send_json_success(json_decode(wp_remote_retrieve_body($response)));
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        if(json_last_error() !== JSON_ERROR_NONE) wp_send_json_error('Invalid response');
+        
+        wp_send_json_success($data);
     }
 
     public function add_admin_menu() {
@@ -228,6 +233,12 @@ class ITC_Pro_Companion {
                         </div>
                         
                         <div>
+                            <label style="font-weight: 800; font-size: 13px; color: #0f172a; display: block; margin-bottom: 5px;">API Endpoint URL</label>
+                            <input type="url" id="itc-api-url" value="<?php echo esc_attr(get_option('itc_api_url', 'https://imagetight-api.vercel.app')); ?>" placeholder="https://your-api.vercel.app" style="width:100%; padding: 12px; font-size:14px; border-radius: 6px; border: 1px solid #cbd5e1;" />
+                            <p style="font-size:11px; color:#64748b; margin-top:5px;">The ImageTight API server endpoint. Change if using a custom domain.</p>
+                        </div>
+                        
+                        <div>
                             <label style="font-weight: 800; font-size: 13px; color: #0f172a; display: block; margin-bottom: 5px;">WebP Quality (1-100)</label>
                             <input type="number" id="itc-quality" value="<?php echo esc_attr(get_option('itc_compression_quality', 75)); ?>" style="width:100%; padding: 12px; font-size:14px; border-radius: 6px; border: 1px solid #cbd5e1;" />
                             <p style="font-size:11px; color:#64748b; margin-top:5px;">75 is highly recommended for lossless perception.</p>
@@ -382,7 +393,11 @@ class ITC_Pro_Companion {
         wp_send_json_error( "Failed to restore file." );
     }
 
-    private function remote_compress($api_url, $api_key, $file_path) {
+    private function remote_compress($file_path) {
+        $api_key = get_option('itc_api_key');
+        $api_url = get_option('itc_api_url', 'https://imagetight-api.vercel.app');
+        $compress_url = $api_url . '/api/compress';
+        
         $boundary = wp_generate_password(24, false);
         $file_content = file_get_contents($file_path);
         if(!$file_content) return new WP_Error('read_error', 'File unreadable.');
@@ -404,7 +419,7 @@ class ITC_Pro_Companion {
         $payload .= $file_content . "\r\n";
         $payload .= "--" . $boundary . "--\r\n";
         
-        return wp_remote_post($api_url, array(
+        return wp_remote_post($compress_url, array(
             'headers' => array('Content-Type' => 'multipart/form-data; boundary=' . $boundary),
             'body'    => $payload,
             'timeout' => 45
@@ -420,7 +435,7 @@ class ITC_Pro_Companion {
         
         if ( file_exists($old_file) && in_array($mime_type, ['image/jpeg', 'image/png']) ) {
             $original_size = filesize($old_file);
-            $response = $this->remote_compress('https://imagetight-api.vercel.app/api/compress', $api_key, $old_file);
+            $response = $this->remote_compress($old_file);
             
             if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200) {
                 $body = wp_remote_retrieve_body($response);
@@ -476,7 +491,7 @@ class ITC_Pro_Companion {
         if ( !file_exists($old_file) ) wp_send_json_error("File not found on disk.");
 
         $original_size = filesize($old_file);
-        $response = $this->remote_compress('https://imagetight-api.vercel.app/api/compress', $api_key, $old_file);
+        $response = $this->remote_compress($old_file);
 
         if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) == 200) {
             $server_format = wp_remote_retrieve_header($response, 'x-output-format') ?: get_option('itc_output_format', 'webp');

@@ -148,6 +148,7 @@ jQuery(document).ready(function($) {
 
     window.itc_save_key = function() {
         var key = $('#itc-api-key').val();
+        var apiUrl = $('#itc-api-url').val();
         var quality = $('#itc-quality').val();
         var threshold = $('#itc-threshold').val();
         var auto = $('#itc-auto').is(':checked') ? 1 : 0;
@@ -157,6 +158,7 @@ jQuery(document).ready(function($) {
             action: 'itc_save_key', 
             nonce: itc_data.nonce, 
             api_key: key,
+            api_url: apiUrl,
             quality: quality,
             threshold: threshold,
             auto: auto,
