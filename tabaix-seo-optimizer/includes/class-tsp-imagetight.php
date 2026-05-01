@@ -32,6 +32,7 @@ class TSP_ImageTight
     const OPT_AUTO      = 'itc_auto_compress';
     const OPT_BACKUP    = 'itc_backup_originals';
     const OPT_GEMINI_KEY= 'itc_gemini_api_key';
+    const OPT_LANGUAGE  = 'itc_language';
 
     const API_ENDPOINT  = 'https://imagetight-api.vercel.app/api/compress';
     const QUOTA_URL     = 'https://imagetight-api.vercel.app/api/quota';
@@ -87,6 +88,7 @@ class TSP_ImageTight
         $auto       = (int)get_option(self::OPT_AUTO, 0);
         $backup     = (int)get_option(self::OPT_BACKUP, 1);
         $gemini_key = get_option(self::OPT_GEMINI_KEY, '');
+        $language   = get_option(self::OPT_LANGUAGE, 'English');
         $has_key    = !empty($api_key);
 
         $total_img  = wp_count_attachments('image');
@@ -230,6 +232,18 @@ class TSP_ImageTight
                         </select>
                     </div>
                     <div class="tss-row">
+                        <label class="tss-label">AI Alt Text Language</label>
+                        <select id="tsp-itc-language" class="tss-input">
+                            <?php
+                            $languages = ['English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Dutch', 'Russian', 'Chinese', 'Japanese', 'Korean', 'Arabic', 'Urdu', 'Hindi', 'Bengali'];
+                            foreach ($languages as $lang) {
+                                echo '<option value="' . esc_attr($lang) . '" ' . selected($language, $lang, false) . '>' . esc_html($lang) . '</option>';
+                            }
+                            ?>
+                        </select>
+                        <small style="color:#94A3B8;">Select the language for your AI-generated alt text.</small>
+                    </div>
+                    <div class="tss-row">
                         <label class="tss-label">Quality (1–100)</label>
                         <input type="number" id="tsp-itc-quality" class="tss-input" value="<?php echo esc_attr($quality); ?>" min="1" max="100" />
                     </div>
@@ -307,6 +321,7 @@ class TSP_ImageTight
         $format   = get_option(self::OPT_FORMAT, 'webp');
         $do_backup= (int)get_option(self::OPT_BACKUP, 1);
         $gemini_key= get_option(self::OPT_GEMINI_KEY, '');
+        $language = get_option(self::OPT_LANGUAGE, 'English');
 
         if (!$image_id || empty($api_key)) wp_send_json_error(['message' => 'Missing image ID or API key.']);
 
@@ -338,6 +353,7 @@ class TSP_ImageTight
             'api_key' => $api_key,
             'quality' => $quality,
             'format'  => $format,
+            'language'=> $language,
         ], self::API_ENDPOINT);
 
         if (!empty($gemini_key)) {
@@ -432,6 +448,7 @@ class TSP_ImageTight
         update_option(self::OPT_AUTO,      (int)($_POST['auto'] ?? 0));
         update_option(self::OPT_BACKUP,    (int)($_POST['backup'] ?? 1));
         update_option(self::OPT_GEMINI_KEY, sanitize_text_field($_POST['gemini_key'] ?? ''));
+        update_option(self::OPT_LANGUAGE,  sanitize_text_field($_POST['language'] ?? 'English'));
 
         wp_send_json_success('Settings saved.');
     }

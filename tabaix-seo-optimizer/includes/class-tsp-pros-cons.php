@@ -73,10 +73,10 @@ class TSP_Pros_Cons
         $schema = [
             '@context'     => 'https://schema.org',
             '@type'        => 'Review',
-            'itemReviewed' => ['@type' => 'Product', 'name' => $atts['product']],
+            'itemReviewed' => ['@type' => 'Product', 'name' => sanitize_text_field($atts['product'])],
             'reviewRating' => ['@type' => 'Rating', 'ratingValue' => $rating, 'bestRating' => 5],
             'author'       => ['@type' => 'Person', 'name' => get_bloginfo('name')],
-            'reviewBody'   => $atts['verdict'] ?: 'Comprehensive review with pros and cons.',
+            'reviewBody'   => sanitize_text_field($atts['verdict']) ?: 'Comprehensive review with pros and cons.',
         ];
 
         return '<div class="tsp-pc-wrap">

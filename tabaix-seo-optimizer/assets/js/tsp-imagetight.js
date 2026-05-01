@@ -124,6 +124,7 @@
             auto:      $('#tsp-itc-auto').is(':checked') ? 1 : 0,
             backup:    $('#tsp-itc-backup').is(':checked') ? 1 : 0,
             gemini_key: $('#tsp-itc-gemini-key').val(),
+            language:  $('#tsp-itc-language').val(),
         }, function(r) {
             $btn.text($(this).attr('id') === 'tsp-itc-test-key' ? '🔑 Test & Save Key' : '💾 Save Settings').prop('disabled', false);
             if (r.success) {
