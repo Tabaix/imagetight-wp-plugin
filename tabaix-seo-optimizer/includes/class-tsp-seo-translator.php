@@ -48,6 +48,7 @@ class TSP_SEO_Translator
         add_filter('the_title', [$this, 'filter_title'], 10, 2);
         add_filter('the_content', [$this, 'filter_content']);
         add_action('wp_head', [$this, 'inject_hreflang_tags']);
+        add_action('template_redirect', [$this, 'auto_redirect_by_browser_language']);
     }
 
     /* ───────────────────────────────────────────────
@@ -208,6 +209,49 @@ class TSP_SEO_Translator
             if (get_post_meta($post_id, '_tsp_translation_' . $code . '_title', true)) {
                 $lang_url = home_url('/' . $code . '/' . basename($original_url) . '/');
                 echo '<link rel="alternate" hreflang="' . esc_attr($code) . '" href="' . esc_url($lang_url) . '" />' . "\n";
+            }
+        }
+    }
+
+    /* ───────────────────────────────────────────────
+       Auto-Detect Browser Language & Redirect (Amazon Style)
+    ─────────────────────────────────────────────── */
+    public function auto_redirect_by_browser_language()
+    {
+        // Only run on single posts where no language is explicitly requested yet
+        if (!is_singular() || get_query_var('tsp_lang')) return;
+        if (!isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) return;
+
+        // Prevent redirect loops using a cookie
+        if (isset($_COOKIE['tsp_lang_redirected'])) return;
+
+        $post_id = get_the_ID();
+        $browser_langs = explode(',', $_SERVER['HTTP_ACCEPT_LANGUAGE']);
+        
+        foreach ($browser_langs as $lang_string) {
+            $lang_code = substr($lang_string, 0, 2); // e.g. "en-US" -> "en", "ar-SA" -> "ar"
+            
+            // If the browser language is English, do nothing (stay on default)
+            if ($lang_code === 'en') {
+                setcookie('tsp_lang_redirected', '1', time() + 86400, '/');
+                return;
+            }
+
+            // If the browser language matches one of our supported translations
+            if (array_key_exists($lang_code, $this->languages)) {
+                // Check if this specific post has actually been translated to that language
+                if (get_post_meta($post_id, '_tsp_translation_' . $lang_code . '_title', true)) {
+                    
+                    // Mark cookie so we don't force redirect them if they manually switch back to English
+                    setcookie('tsp_lang_redirected', '1', time() + 86400, '/');
+                    
+                    // Redirect them automatically to the translated /ar/ version!
+                    $original_url = get_permalink($post_id);
+                    $lang_url = home_url('/' . $lang_code . '/' . basename(untrailingslashit($original_url)) . '/');
+                    
+                    wp_redirect($lang_url, 302);
+                    exit;
+                }
             }
         }
     }
