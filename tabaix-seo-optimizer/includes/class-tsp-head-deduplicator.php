@@ -25,6 +25,7 @@ if (!defined('ABSPATH')) exit;
  */
 class TSP_Head_Deduplicator
 {
+    /** @var self|null */
     private static $instance = null;
 
     public static function get_instance()
@@ -38,15 +39,17 @@ class TSP_Head_Deduplicator
     private function __construct()
     {
         // Only run on the frontend, not in admin
-        if (is_admin()) return;
+        if (function_exists('is_admin') && is_admin()) return;
 
         // Start buffering at the very beginning of wp_head
         // Priority -9999 = runs before anything else in wp_head
-        add_action('wp_head', [$this, 'start_buffer'], -9999);
+        if (function_exists('add_action')) {
+            add_action('wp_head', [$this, 'start_buffer'], -9999);
 
-        // End buffering at the very end of wp_head
-        // Priority 99999 = runs after everything else in wp_head
-        add_action('wp_head', [$this, 'end_buffer_and_deduplicate'], 99999);
+            // End buffering at the very end of wp_head
+            // Priority 99999 = runs after everything else in wp_head
+            add_action('wp_head', [$this, 'end_buffer_and_deduplicate'], 99999);
+        }
     }
 
     /**
@@ -80,13 +83,16 @@ class TSP_Head_Deduplicator
         $html = $this->deduplicate_meta_name($html, 'twitter:description');
         $html = $this->deduplicate_meta_name($html, 'twitter:image');
 
-        echo wp_kses_post($html);
+        echo $html;
     }
 
     // ── Deduplication helpers ─────────────────────────────────────────────────
 
     /**
      * Keep only the FIRST <title> tag, remove all subsequent ones.
+     * 
+     * @param string $html
+     * @return string
      */
     private function deduplicate_title($html)
     {
@@ -105,6 +111,10 @@ class TSP_Head_Deduplicator
     /**
      * Keep only the FIRST <meta name="X" ...> for a given name attribute.
      * Handles both name="..." and name='...' and case variations.
+     * 
+     * @param string $html
+     * @param string $name
+     * @return string
      */
     private function deduplicate_meta_name($html, $name)
     {
@@ -125,6 +135,10 @@ class TSP_Head_Deduplicator
 
     /**
      * Keep only the FIRST <meta property="X" ...> for a given property attribute.
+     * 
+     * @param string $html
+     * @param string $property
+     * @return string
      */
     private function deduplicate_meta_property($html, $property)
     {
