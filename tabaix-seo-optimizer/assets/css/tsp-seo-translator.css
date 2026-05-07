@@ -1,0 +1,18 @@
+.tsp-language-switcher {
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  display: inline-block;
+}
+
+.tsp-language-switcher-select {
+  padding: 5px;
+  border-radius: 5px;
+  min-width: 150px;
+}
+
+.tsp-google-translate-element {
+  display: none;
+}
