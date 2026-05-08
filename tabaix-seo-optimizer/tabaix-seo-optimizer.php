@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: Tabaix All-in-One SEO & Optimizer
- * Plugin URI:  https://imagetight.tabaix.com/seo-plugin
+ * Plugin Name: Tabaix SEO Suite & ImageTight
+ * Plugin URI:  https://imagetight.com/seo-plugin
  * Description: The all-in-one WordPress SEO + AI plugin — Content Generator, SEO Audit, Internal Linking, Alt Text, Image Optimizer (ImageTight), Table of Contents, Pros & Cons Schema, Auto Translate, Chatbot & more. Powered by YOUR OWN free Gemini or OpenAI API key.
  * Version:     2.0.0
  * Author:      Tayyab Ali (Tabaix)

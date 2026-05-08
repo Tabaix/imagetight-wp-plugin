@@ -1,5 +1,5 @@
-=== Tabaix All-in-One SEO & Optimizer ===
-Contributors: tabaix
+=== Tabaix SEO Suite & ImageTight ===
+Contributors: tabaix, tabaidev
 Tags: image compression, webp, avif, seo, internal linking, artificial intelligence, content generation
 Requires at least: 6.0
 Tested up to: 6.9

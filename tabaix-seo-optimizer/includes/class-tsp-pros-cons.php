@@ -69,7 +69,9 @@ class TSP_Pros_Cons
             $cons_html .= '<li>' . esc_html($con) . '</li>';
         }
 
-        // Schema.org Review markup
+        // Schema.org Review markup — all user-supplied values are sanitized via
+        // sanitize_text_field() above before being added to this array.
+        // wp_json_encode() safely encodes all values for JSON context.
         $schema = [
             '@context'     => 'https://schema.org',
             '@type'        => 'Review',
@@ -79,9 +81,12 @@ class TSP_Pros_Cons
             'reviewBody'   => sanitize_text_field($atts['verdict']) ?: 'Comprehensive review with pros and cons.',
         ];
 
+        // wp_json_encode with JSON_HEX_TAG prevents </script> injection in JSON-LD
+        $schema_json = wp_json_encode($schema, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE);
+
         return '<div class="tsp-pc-wrap">
             <div class="tsp-pc-header">
-                ⚖️ ' . esc_html($atts['product']) . ' — Pros & Cons
+                ⚖️ ' . esc_html($atts['product']) . ' — Pros &amp; Cons
                 <small>Honest Review</small>
             </div>
             <div class="tsp-pc-body">
@@ -95,11 +100,11 @@ class TSP_Pros_Cons
                 </div>
             </div>
             <div class="tsp-pc-rating">
-                <span class="tsp-pc-stars">' . $stars . '</span>
-                <strong>' . number_format($rating, 1) . '/5</strong>
+                <span class="tsp-pc-stars">' . esc_html($stars) . '</span>
+                <strong>' . esc_html(number_format($rating, 1)) . '/5</strong>
                 <span>— ' . esc_html($atts['product']) . '</span>
             </div>
-            <script type="application/ld+json">' . wp_json_encode($schema) . '</script>
+            <script type="application/ld+json">' . $schema_json . '</script>
         </div>';
     }
 
