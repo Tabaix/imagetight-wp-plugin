@@ -201,7 +201,7 @@ jQuery(document).ready(function($) {
                 } else {
                     var errorMsg = res.data;
                     if (errorMsg.includes('Package') || errorMsg.includes('limit reached') || errorMsg.includes('Payment required')) {
-                         $status.html('🛑 0 Credits Remaining. <a href="https://imagetight.tabaix.com/dashboard" target="_blank" style="color:#DC2626; text-decoration:underline;">Click Here to Top Up.</a>').css('color', '#0F172A');
+                         $status.html('🛑 0 Credits Remaining. <a href="https://www.imagetight.com/en?tab=billing" target="_blank" style="color:#DC2626; text-decoration:underline;">Click Here to Top Up.</a>').css('color', '#0F172A');
                          $btn.text('Limits Exceeded').prop('disabled', true).css('opacity', '0.5');
                     } else {
                          $status.text('Error: ' + errorMsg).css('color', '#DC2626');
