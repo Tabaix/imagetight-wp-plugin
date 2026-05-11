@@ -1,0 +1,26 @@
+.uam-mb-actions { display: flex; gap: 8px; }
+.uam-mb-preview { display: none; margin-top: 15px; }
+.uam-mb-row-flex { display: flex; gap: 10px; }
+.flex-1 { flex: 1; }
+.margin-top-15 { margin-top: 15px; }
+.margin-top-10 { margin-top: 10px; }
+.display-none { display: none; }
+.gap-8 { gap: 8px; }
+.vision-desc { font-size: 12px; color: #64748b; margin-bottom: 12px; }
+.uam-mb-tabs { display: flex; border-bottom: 1px solid #e2e8f0; margin-bottom: 16px; }
+.uam-mb-tab { padding: 10px 16px; cursor: pointer; font-size: 12px; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; transition: all .2s; }
+.uam-mb-tab.active { color: #6366f1; border-bottom-color: #6366f1; background: rgba(99, 102, 241, 0.05); }
+.uam-mb-content { display: none; }
+.uam-mb-content.active { display: block; }
+.uam-mb-row { margin-bottom: 14px; }
+.uam-mb-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 5px; }
+.uam-mb-input, .uam-mb-textarea, .uam-mb-select { width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 7px; font-size: 13px; color: #1e293b; background: #f8fafc; box-sizing: border-box; }
+.uam-mb-btn { padding: 8px 16px; border-radius: 7px; border: none; cursor: pointer; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.uam-mb-btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+.uam-mb-btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.uam-mb-preview { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-top: 14px; }
+.uam-mb-preview-title { font-size: 18px; color: #1a0dab; font-weight: 500; }
+.uam-mb-preview-desc { font-size: 13px; color: #545454; line-height: 1.5; }
+.uam-mb-loader { display: none; align-items: center; gap: 8px; font-size: 12px; color: #6366f1; padding: 10px 0; }
+.uam-mb-spinner { width: 14px; height: 14px; border: 2px solid rgba(99, 102, 241, .2); border-top-color: #6366f1; border-radius: 50%; animation: uam-spin .7s linear infinite; }
+@keyframes uam-spin { to { transform: rotate(360deg); } }
